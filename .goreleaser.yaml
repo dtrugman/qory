@@ -1,0 +1,19 @@
+project_name: qory
+version: 2
+builds:
+  - id: qory
+    main: ./cmd/qory/
+    binary: qory
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - 6
+      - 7
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
