@@ -1,3 +1,5 @@
+![qory](./img/qory.png "Logo")
+
 # Qory
 
 **A language model in your terminal**
