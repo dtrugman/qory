@@ -13,7 +13,8 @@ import (
 const (
 	appName = "Qory"
 
-	argConfig = "--config"
+	argConfig  = "--config"
+	argVersion = "--version"
 
 	argAPIKey  = "api-key"
 	argBaseURL = "base-url"
@@ -26,6 +27,8 @@ const (
 )
 
 var (
+	version = "dev"
+
 	ErrorBadArguments = errors.New("bad arguments")
 )
 
@@ -33,6 +36,7 @@ func usage(arg0 string) {
 	fmt.Printf("%s: A language model in your terminal\n", appName)
 	fmt.Printf("\n")
 	fmt.Printf("Usage:  %s [input]...\n", arg0)
+	fmt.Printf("        %s --version\n", arg0)
 	fmt.Printf("        %s --config [options]\n", arg0)
 	fmt.Printf("\n")
 	fmt.Printf("%s is a tool for accessing language models directly from your CLI\n", appName)
@@ -195,6 +199,11 @@ func runConfigKey(
 	return ErrorBadArguments
 }
 
+func runVersion() error {
+	fmt.Printf("%s version %s\n", appName, version)
+	return nil
+}
+
 func runConfig(args []string, conf config.Config) error {
 	if len(args) < 3 {
 		usageConfig(args[0])
@@ -236,7 +245,9 @@ func run(args []string) error {
 		return err
 	}
 
-	if action == argConfig {
+	if action == argVersion {
+		return runVersion()
+	} else if action == argConfig {
 		return runConfig(args, conf)
 	} else { // no action, an implicit query
 		return runQuery(args, conf)
