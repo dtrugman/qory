@@ -23,6 +23,41 @@ Add output from a shell command:
 qory "This is my project dir" "$(ls)" "How should I improve it?"
 ```
 
+## Install
+
+Qory is compiled for all major operating systems and architectures.
+If you are looking for an architecture that is not supported, please open a ticket.
+
+There are three install options:
+
+### 1. Manual
+
+Go to the 'releases' tab, and download the right asset for your system.
+On Unix systems, set it as an executable using `chmod +x <file>`, and just run it.
+
+### 2. Unix
+
+Download and install into a directory of your choosing using a one-liner.
+
+Download into your system's bin directory, i.e. `/usr/local/bin` (requires `sudo`):
+```
+curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+```
+If you prefer `wget`:
+```
+wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+```
+Now you should be able to run `qory`.
+
+If you are an advanced user, feel free to install it into **any other dir in your PATH**:
+```
+curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
+```
+
+## Check installation
+
+Run `qory --version` and see if the command succeeds.
+
 ## Configuration
 
 To start using Qory, you need to set two values, your API key and the model you want to use.
