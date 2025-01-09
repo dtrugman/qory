@@ -48,3 +48,11 @@ By default, the tool will use the public OpenAI API.
 If you would like to change it, you can:
 1. Set the `OPENAI_BASE_URL` environment variable
 1. Use `qory --config api-key set`
+
+### Persistent prompt
+
+If you want to set a custom system prompt to always include with your qory-s,
+you can set it using `qory --config prompt set`.
+
+I find it useful to tell the model
+"do not explain, just provide the essence of the request"
