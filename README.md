@@ -87,6 +87,8 @@ Ensure it runs successfully.
 
 Before using Qory, set up your API key and preferred model.
 
+Save once. Configuration is stored in `~/.config/qory` on MacOS/Linux or `%APPDATA%` on Windows.
+
 ### 📌 Model Selection
 
 Run:
@@ -107,19 +109,14 @@ Run:
 qory --config api-key set
 ```
 
-Save once. Configuration is stored in `~/.config/qory` on MacOS/Linux or `%APPDATA%` on Windows.
-
 #### Alternatives to Set API Key
-
-1. Set `OPENAI_API_KEY` environment variable.
-2. Use `qory --config api-key set`.
 
 ### 🔄 Base URL
 
 Defaults to OpenAI API. Change it by:
 
 1. Setting `OPENAI_BASE_URL`.
-2. Using `qory --config api-key set`.
+2. Using `qory --config base-url set`.
 
 ### 📌 Persistent Prompt
 
