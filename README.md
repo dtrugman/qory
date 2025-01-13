@@ -28,16 +28,29 @@ qory "This is my project dir" "$(ls)" "How should I improve it?"
 Qory is compiled for all major operating systems and architectures.
 If you are looking for an architecture that is not supported, please open a ticket.
 
+Check out the release page and the relevant file for your platform:
+
+- MacOS / Apple Silicon (M1, M2, ...): `qory_<ver>_darwin_arm64`
+- MacOS / Intel CPU: `qory_<ver>_darwin_amd64`
+- Linux / x64: `qory_<ver>_linux_amd64`
+- Linux / ARM: `qory_<ver>_linux_arm64`
+- Windows / x64: `qory_<ver>_windows_amd64`
+- Windows / ARM: `qory_<ver>_windows_arm64`
+
 There are three install options:
 
 ### 1. Manual
 
 Go to the 'releases' tab, and download the right asset for your system.
-On Unix systems, set it as an executable using `chmod +x <file>`, and just run it.
+On Unix systems, set it as an executable using `chmod +x <file>`, and run it.
+
+See the [Configuration](#configuration) section below before using it for the first time.
 
 ### 2. Unix
 
 Download and install into a directory of your choosing using a one-liner.
+
+**NOTE:** Adjust the filename you download according to your platform
 
 Download into your system's bin directory, i.e. `/usr/local/bin` (requires `sudo`):
 ```
@@ -47,12 +60,15 @@ If you prefer `wget`:
 ```
 wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
 ```
-Now you should be able to run `qory`.
 
 If you are an advanced user, feel free to install it into **any other dir in your PATH**:
 ```
 curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
 ```
+
+See the [Configuration](#configuration) section below before using it for the first time.
+
+And run your first qory: `qory hi`
 
 ## Check installation
 
@@ -60,9 +76,19 @@ Run `qory --version` and see if the command succeeds.
 
 ## Configuration
 
-To start using Qory, you need to set two values, your API key and the model you want to use.
+Before you use Qory for the first time, you need to set two values, your API key and the model you want to use.
 
-You only need to do it once. Your configurations are stored under the user's home directory.
+### Choose your preferred model
+
+Run: `qory --config model set`
+
+Use any OpenAI supported model, including: `gpt-4o`, `gpt-4o-mini`, `gpt-o1`, ...
+
+### Setup your API key
+
+Run: `qory --config api-key set`
+
+You only need to do it once. Your configuration is stored under the user's home directory: `~/.config/qory` on MacOS or Linux, `%APPDATA%` on Windows.
 
 ### API Key
 
