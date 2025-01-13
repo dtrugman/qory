@@ -1,119 +1,134 @@
-![qory](./img/qory.png "Logo")
+![qory logo](./img/qory.png)
 
-# Qory
+# 🚀 Qory
 
-**A language model in your terminal**
+**A Language Model in Your Terminal**
 
-Stop alt+tab-ing to your browser!
+💻 Skip the alt+tab to your browser!
+📋 Stop copy-pasting from other language models!
+🔧 Streamline your workflow with terminal queries.
 
-Stop copy-pasting from ChatGPT/Anthropic/Gemini/etc...
-
-Make your life easier by running queries directly from your terminal. As simple as:
-```
+```bash
 qory "Please create a basic OpenAPI yaml template" > openapi.yaml
 ```
 
 Add context from existing files:
-```
+
+```bash
 qory openapi.yaml main.py "Please implement the endpoint /ping in my python server" > ping.py
 ```
 
-Add output from a shell command:
-```
+Integrate shell command output:
+
+```bash
 qory "This is my project dir" "$(ls)" "How should I improve it?"
 ```
 
-## Install
+## 🌟 Install
 
-Qory is compiled for all major operating systems and architectures.
-If you are looking for an architecture that is not supported, please open a ticket.
+Qory is compiled for major operating systems and architectures. If your architecture isn't supported, drop a ticket!
 
-Check out the release page and the relevant file for your platform:
+Check out the releases page for your platform:
 
-- MacOS / Apple Silicon (M1, M2, ...): `qory_<ver>_darwin_arm64`
-- MacOS / Intel CPU: `qory_<ver>_darwin_amd64`
-- Linux / x64: `qory_<ver>_linux_amd64`
-- Linux / ARM: `qory_<ver>_linux_arm64`
-- Windows / x64: `qory_<ver>_windows_amd64`
-- Windows / ARM: `qory_<ver>_windows_arm64`
+- 🖥️ MacOS / Apple Silicon: `qory_<ver>_darwin_arm64`
+- 🖥️ MacOS / Intel: `qory_<ver>_darwin_amd64`
+- 🐧 Linux / x64: `qory_<ver>_linux_amd64`
+- 🐧 Linux / ARM: `qory_<ver>_linux_arm64`
+- 🖥️ Windows / x64: `qory_<ver>_windows_amd64`
+- 🖥️ Windows / ARM: `qory_<ver>_windows_arm64`
 
-There are three install options:
+### 📥 Installation Options
 
-### 1. Manual
+#### Manual
 
-Go to the 'releases' tab, and download the right asset for your system.
-On Unix systems, set it as an executable using `chmod +x <file>`, and run it.
+1. Go to the 'releases' tab.
+2. Download the appropriate asset.
+3. On Unix, set as executable: `chmod +x <file>`, and run it.
 
-See the [Configuration](#configuration) section below before using it for the first time.
+⚙️ See the [Configuration](#configuration) section before using it first.
 
-### 2. Unix
+#### Unix
 
-Download and install into a directory of your choosing using a one-liner.
+For a quick download and install, choose your preferred method:
 
-**NOTE:** Adjust the filename you download according to your platform
+- **curl**:
 
-Download into your system's bin directory, i.e. `/usr/local/bin` (requires `sudo`):
-```
-curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
-```
-If you prefer `wget`:
-```
-wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
-```
+  ```bash
+  curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  ```
 
-If you are an advanced user, feel free to install it into **any other dir in your PATH**:
-```
+- **wget**:
+
+  ```bash
+  wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  ```
+
+Advanced users can install in **any other dir in your PATH**:
+
+```bash
 curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.1/qory_0.1_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
 ```
 
-See the [Configuration](#configuration) section below before using it for the first time.
+⚙️ Remember to configure before first use by visiting the [Configuration](#configuration) section.
 
-And run your first qory: `qory hi`
+Run your first qory: `qory hi`
 
-## Check installation
+## 🔍 Check Installation
 
-Run `qory --version` and see if the command succeeds.
+Run:
 
-## Configuration
+```bash
+qory --version
+```
 
-Before you use Qory for the first time, you need to set two values, your API key and the model you want to use.
+Ensure it runs successfully.
 
-### Choose your preferred model
+## ⚙️ Configuration
 
-Run: `qory --config model set`
+Before using Qory, set up your API key and preferred model.
 
-Use any OpenAI supported model, including: `gpt-4o`, `gpt-4o-mini`, `gpt-o1`, ...
+### 📌 Model Selection
 
-### Setup your API key
+Run:
 
-Run: `qory --config api-key set`
+```bash
+qory --config model set
+```
 
-You only need to do it once. Your configuration is stored under the user's home directory: `~/.config/qory` on MacOS or Linux, `%APPDATA%` on Windows.
+Use any OpenAI model, including: `gpt-4o`, `gpt-4o-mini`, `gpt-o1`, ...
 
-### API Key
+Check available models [here](https://platform.openai.com/docs/models).
 
-There are two ways to set up your API key:
-1. Using the `OPENAI_API_KEY` environment variable
-1. Via the tools, using `qory --config api-key set`
+### 🔑 API Key Setup
 
-### Model
+Run:
 
-Set your desired model using: `qory --config model set`.
+```bash
+qory --config api-key set
+```
 
-You can find OpenAI's models on this [page](https://platform.openai.com/docs/models).
-An example would be: `gpt-4o` or `gpt-4o-mini`.
+Save once. Configuration is stored in `~/.config/qory` on MacOS/Linux or `%APPDATA%` on Windows.
 
-### Base URL
+#### Alternatives to Set API Key
 
-By default, the tool will use the public OpenAI API.
-If you would like to change it, you can:
-1. Set the `OPENAI_BASE_URL` environment variable
-1. Use `qory --config api-key set`
+1. Set `OPENAI_API_KEY` environment variable.
+2. Use `qory --config api-key set`.
 
-### Persistent prompt
+### 🔄 Base URL
 
-If you want to set a custom system prompt to always include with your qory-s,
-you can set it using `qory --config prompt set`.
+Defaults to OpenAI API. Change it by:
 
-I find it useful to tell the model
-"do not explain, just provide the essence of the request"
+1. Setting `OPENAI_BASE_URL`.
+2. Using `qory --config api-key set`.
+
+### 📌 Persistent Prompt
+
+Create a custom system prompt to always accompany your qory commands:
+
+```bash
+qory --config prompt set
+```
+
+Example prompt: "do not explain, just provide the essence of the request" 💡
+
+🔗 For further assistance and updates, visit [Qory on GitHub](https://github.com/dtrugman/qory).
