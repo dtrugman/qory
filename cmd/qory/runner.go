@@ -44,17 +44,7 @@ func buildPrompt(args []string) string {
 	return promptBuilder.String()
 }
 
-func runQuery(args []string, conf config.Config) error {
-	apiKey, err := conf.Get(config.APIKey)
-	if err != nil {
-		return fmt.Errorf("get API key failed: %w", err)
-	}
-
-	baseURL, err := conf.Get(config.BaseURL)
-	if err != nil {
-		return fmt.Errorf("get base URL failed: %w", err)
-	}
-
+func runQuery(args []string, client model.Client, conf config.Config) error {
 	modelName, err := conf.Get(config.Model)
 	if modelName == nil {
 		return fmt.Errorf("model is not set")
@@ -68,7 +58,6 @@ func runQuery(args []string, conf config.Config) error {
 	}
 
 	prompt := buildPrompt(args)
-	client := model.NewClient(apiKey, baseURL, *modelName)
-	client.Query(systemPrompt, prompt)
+	client.Query(*modelName, systemPrompt, prompt)
 	return nil
 }

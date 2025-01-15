@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -15,14 +16,14 @@ var (
 
 type client struct {
 	openaiClient *openai.Client
-	model        string
 }
 
 type Client interface {
-	Query(systemPrompt *string, userPrompt string)
+	AvailableModels() ([]string, error)
+	Query(model string, systemPrompt *string, userPrompt string)
 }
 
-func NewClient(apiKey *string, baseURL *string, model string) Client {
+func NewClient(apiKey *string, baseURL *string) Client {
 	var options []option.RequestOption
 
 	if apiKey != nil {
@@ -37,11 +38,43 @@ func NewClient(apiKey *string, baseURL *string, model string) Client {
 
 	return &client{
 		openaiClient: openaiClient,
-		model:        model,
 	}
 }
 
-func (c *client) Query(systemPrompt *string, userPrompt string) {
+func (c *client) parseError(raw error) error {
+	var apierr *openai.Error
+	if !errors.As(raw, &apierr) {
+		return raw
+	}
+
+	var errobj struct {
+		Error openai.ErrorObject `json:"error"`
+	}
+	if err := json.Unmarshal([]byte(apierr.JSON.RawJSON()), &errobj); err != nil {
+		return raw
+	}
+
+	return fmt.Errorf("%s", errobj.Error.Message)
+}
+
+func (c *client) AvailableModels() ([]string, error) {
+	ctx := context.Background()
+
+	modelNames := make([]string, 0)
+
+	pager := c.openaiClient.Models.ListAutoPaging(ctx)
+	if pager.Err() != nil {
+		return nil, c.parseError(pager.Err())
+	}
+
+	for pager.Next() {
+		modelNames = append(modelNames, pager.Current().ID)
+	}
+
+	return modelNames, nil
+}
+
+func (c *client) Query(model string, systemPrompt *string, userPrompt string) {
 	ctx := context.Background()
 
 	messages := make([]openai.ChatCompletionMessageParamUnion, 0)
@@ -52,7 +85,7 @@ func (c *client) Query(systemPrompt *string, userPrompt string) {
 
 	stream := c.openaiClient.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: openai.F(messages),
-		Model:    openai.F(c.model),
+		Model:    openai.F(model),
 	})
 
 	for stream.Next() {
@@ -66,7 +99,8 @@ func (c *client) Query(systemPrompt *string, userPrompt string) {
 	}
 
 	if err := stream.Err(); err != nil {
-		fmt.Printf("Error: %v", err)
+		parsed := c.parseError(err)
+		fmt.Printf("Error: %v", parsed)
 	}
 
 	fmt.Println("")

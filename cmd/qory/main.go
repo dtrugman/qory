@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/dtrugman/qory/lib/config"
+	"github.com/dtrugman/qory/lib/model"
 )
 
 const (
@@ -123,8 +126,8 @@ func validateBaseURL(value string) error {
 	}
 }
 
-func promptUserInput(prompt string) (string, error) {
-	fmt.Print(prompt)
+func promptUserInput() (string, error) {
+	fmt.Print("Enter value: ")
 
 	reader := bufio.NewReader(os.Stdin)
 	input, err := reader.ReadString('\n')
@@ -135,6 +138,33 @@ func promptUserInput(prompt string) (string, error) {
 	return strings.TrimSpace(input), nil
 }
 
+func promptFromList(list []string) (string, error) {
+	for i, value := range list {
+		fmt.Printf("%d. %s\n", i+1, value)
+	}
+
+	fmt.Print("Choose option: ")
+
+	reader := bufio.NewReader(os.Stdin)
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	input = strings.TrimSuffix(input, "\n")
+
+	index, err := strconv.Atoi(input)
+	if err != nil {
+		return "", fmt.Errorf("invalid number")
+	}
+
+	index = index - 1
+	if index < 0 || index >= len(list) {
+		return "", fmt.Errorf("bad selection")
+	}
+
+	return list[index], nil
+}
+
 func runConfigKey(
 	args []string,
 	conf config.Config,
@@ -142,6 +172,7 @@ func runConfigKey(
 	desc string,
 	valueValidator func(string) error,
 	keyUsage func(string),
+	inputPrompt func() (string, error),
 ) error {
 	if len(args) < 4 {
 		keyUsage(args[0])
@@ -174,7 +205,7 @@ func runConfigKey(
 		var err error
 		var value string
 		if len(args) != 5 {
-			value, err = promptUserInput("Enter value: ")
+			value, err = inputPrompt()
 		} else {
 			value, err = args[4], nil
 		}
@@ -204,33 +235,57 @@ func runVersion() error {
 	return nil
 }
 
-func runConfig(args []string, conf config.Config) error {
+func runConfig(args []string, client model.Client, conf config.Config) error {
 	if len(args) < 3 {
 		usageConfig(args[0])
 		return ErrorBadArguments
 	}
 	key := args[2]
 
+	promptModelSelection := func() (string, error) {
+		models, err := client.AvailableModels()
+		if err != nil {
+			return "", err
+		}
+		sort.Strings(models)
+		return promptFromList(models)
+	}
+
 	if key == argAPIKey {
 		return runConfigKey(
 			args, conf, config.APIKey, "API key",
-			validateNothing, usageConfigAPIKey)
+			validateNothing, usageConfigAPIKey, promptUserInput)
 	} else if key == argBaseURL {
 		return runConfigKey(
 			args, conf, config.BaseURL, "base URL",
-			validateBaseURL, usageConfigBaseURL)
+			validateBaseURL, usageConfigBaseURL, promptUserInput)
 	} else if key == argModel {
 		return runConfigKey(
 			args, conf, config.Model, "model",
-			validateNothing, usageConfigModel)
+			validateNothing, usageConfigModel, promptModelSelection)
 	} else if key == argPrompt {
 		return runConfigKey(
 			args, conf, config.Prompt, "prompt",
-			validateNothing, usageConfigPrompt)
+			validateNothing, usageConfigPrompt, promptUserInput)
 	} else {
 		usageConfig(args[0])
 		return ErrorBadArguments
 	}
+}
+
+func buildClient(conf config.Config) (model.Client, error) {
+	apiKey, err := conf.Get(config.APIKey)
+	if err != nil {
+		return nil, fmt.Errorf("get API key failed: %w", err)
+	}
+
+	baseURL, err := conf.Get(config.BaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("get base URL failed: %w", err)
+	}
+
+	client := model.NewClient(apiKey, baseURL)
+	return client, nil
 }
 
 func run(args []string) error {
@@ -245,12 +300,17 @@ func run(args []string) error {
 		return err
 	}
 
+	client, err := buildClient(conf)
+	if err != nil {
+		return err
+	}
+
 	if action == argVersion {
 		return runVersion()
 	} else if action == argConfig {
-		return runConfig(args, conf)
+		return runConfig(args, client, conf)
 	} else { // no action, an implicit query
-		return runQuery(args, conf)
+		return runQuery(args, client, conf)
 	}
 }
 
