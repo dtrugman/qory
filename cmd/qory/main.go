@@ -295,7 +295,7 @@ func run(args []string) error {
 	}
 	action := args[1]
 
-	conf, err := config.NewManager()
+	conf, err := config.NewConfig()
 	if err != nil {
 		return err
 	}
