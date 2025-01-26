@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"sort"
 	"time"
+
+	"github.com/dtrugman/qory/lib/message"
 )
 
 const (
@@ -19,28 +21,29 @@ const (
 const (
 	SessionsDirName = "sessions"
 
-	sessionsFilePerm = 0400
+	sessionsFilePerm = 0600
 
 	sessionPreviewChars = 64
 )
 
-var ErrInvalidID = errors.New("invalid session id")
-
-type Role string
-
-const (
-	System    Role = "system"
-	User      Role = "user"
-	Assistant Role = "assistant"
+var (
+	ErrInvalidID = errors.New("invalid session id")
+	ErrNotFound  = errors.New("unknown session id")
 )
 
-type Message struct {
-	Role    Role   `json:"role"`
-	Content string `json:"content"`
+type Session struct {
+	Messages []message.Message `json:"messages"`
 }
 
-type Session struct {
-	Messages []Message `json:"messages"`
+func NewSession() Session {
+	messages := make([]message.Message, 0)
+	return Session{
+		Messages: messages,
+	}
+}
+
+func (s *Session) AddMessage(m message.Message) {
+	s.Messages = append(s.Messages, m)
 }
 
 type SessionPreview struct {
@@ -84,7 +87,7 @@ func (m *manager) loadSessionSnippet(filename string) (string, error) {
 	var lastUserFound bool = false
 	var lastUserContent string
 	for i := len(session.Messages) - 1; i >= 0; i-- {
-		if session.Messages[i].Role == User {
+		if session.Messages[i].Role == message.RoleUser {
 			lastUserFound = true
 			lastUserContent = session.Messages[i].Content
 			break
@@ -157,7 +160,11 @@ func (m *manager) Load(id string) (Session, error) {
 	path := filepath.Join(m.dir, id)
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		return Session{}, err
+		if os.IsNotExist(err) {
+			return Session{}, ErrNotFound
+		} else {
+			return Session{}, err
+		}
 	}
 
 	err = json.Unmarshal(bytes, &session)

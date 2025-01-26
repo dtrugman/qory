@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/dtrugman/qory/lib/message"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
@@ -21,7 +22,7 @@ type client struct {
 
 type Client interface {
 	AvailableModels() ([]string, error)
-	Query(model string, systemPrompt *string, userPrompt string) (string, error)
+	Query(model string, messages []message.Message) (string, error)
 }
 
 func NewClient(apiKey *string, baseURL *string) Client {
@@ -75,21 +76,34 @@ func (c *client) AvailableModels() ([]string, error) {
 	return modelNames, nil
 }
 
-func (c *client) Query(model string, systemPrompt *string, userPrompt string) (string, error) {
+func (c *client) translateMessage(m message.Message) openai.ChatCompletionMessageParamUnion {
+	switch m.Role {
+	case message.RoleUser:
+		return openai.UserMessage(m.Content)
+	case message.RoleSystem:
+		return openai.SystemMessage(m.Content)
+	case message.RoleAssistant:
+		return openai.AssistantMessage(m.Content)
+	default:
+		panic("unknown role")
+	}
+}
+
+func (c *client) Query(model string, messages []message.Message) (string, error) {
 	ctx := context.Background()
 
-	messages := make([]openai.ChatCompletionMessageParamUnion, 0)
-	if systemPrompt != nil {
-		messages = append(messages, openai.SystemMessage(*systemPrompt))
+	openAIMessages := make([]openai.ChatCompletionMessageParamUnion, 0)
+	for _, message := range messages {
+		openAIMessage := c.translateMessage(message)
+		openAIMessages = append(openAIMessages, openAIMessage)
 	}
-	messages = append(messages, openai.UserMessage(userPrompt))
-
-	var aggregator strings.Builder
 
 	stream := c.openaiClient.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
-		Messages: openai.F(messages),
+		Messages: openai.F(openAIMessages),
 		Model:    openai.F(model),
 	})
+
+	var aggregator strings.Builder
 
 	for stream.Next() {
 		event := stream.Current()
@@ -105,7 +119,7 @@ func (c *client) Query(model string, systemPrompt *string, userPrompt string) (s
 
 	if err := stream.Err(); err != nil {
 		parsed := c.parseError(err)
-		fmt.Printf("Error: %v", parsed)
+		fmt.Printf("Provider error: %v\n", parsed)
 		return "", err
 	}
 

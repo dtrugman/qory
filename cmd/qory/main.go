@@ -24,6 +24,8 @@ const (
 	argVersionShort = "-v"
 	argHistory      = "--history"
 	argHistoryShort = "-h"
+	argSession      = "--session"
+	argSessionShort = "-s"
 
 	argAPIKey  = "api-key"
 	argBaseURL = "base-url"
@@ -46,7 +48,7 @@ var (
 func usage(arg0 string) {
 	fmt.Printf("%s: A language model in your terminal\n", appName)
 	fmt.Printf("\n")
-	fmt.Printf("Usage:  %s [input]...\n", arg0)
+	fmt.Printf("Usage:  %s [%s|%s session-id] <input...>\n", arg0, argSessionShort, argSession)
 	fmt.Printf("        %s %s|%s\n", arg0, argVersionShort, argVersion)
 	fmt.Printf("        %s %s|%s\n", arg0, argHistoryShort, argHistory)
 	fmt.Printf("        %s %s|%s [options]\n", arg0, argConfigShort, argConfig)
@@ -59,6 +61,11 @@ func usage(arg0 string) {
 	fmt.Printf("\n")
 	fmt.Printf("A query with an attached local file as input, would look like this:\n")
 	fmt.Printf("    > %s \"Please add a health check to my OpenAPI spec\" openapi.yaml\n", arg0)
+	fmt.Printf("\n")
+	fmt.Printf("A query that creates a named session looks like this:\n")
+	fmt.Printf("    > %s %s spec \"Please add a health check to my OpenAPI spec\" openapi.yaml\n", arg0, argSession)
+	fmt.Printf("    ... some output from model ...\n")
+	fmt.Printf("    > %s %s spec \"Please define a new parameter for the body\"\n", arg0, argSession)
 	fmt.Printf("\n")
 	fmt.Printf("To see your last queries, just run:\n")
 	fmt.Printf("    > %s %s\n", arg0, argHistory)
@@ -354,7 +361,9 @@ func run(args []string) error {
 		return runConfig(args, client, conf)
 	} else if action == argHistory || action == argHistoryShort {
 		return runHistory(sessionManager)
-	} else { // no action, an implicit query
+	} else if action == argSession || action == argSessionShort {
+		return runQueryWithSession(args, client, sessionManager, conf)
+	} else { // an implicit query without a session
 		return runQuery(args, client, sessionManager, conf)
 	}
 }
