@@ -38,6 +38,8 @@ const (
 	argUnset = "unset"
 
 	historyLength = 10
+
+	sessionUnnamedLimit = 10
 )
 
 var (

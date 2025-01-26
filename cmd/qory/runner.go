@@ -110,6 +110,11 @@ func runQueryInner(
 	if err = sessionManager.Store(sessionID, sess); err != nil {
 		fmt.Printf("Store session failed: %v", err)
 	}
+
+	if err = sessionManager.Cleanup(sessionUnnamedLimit); err != nil {
+		fmt.Printf("Auto-cleanup failed: %v", err)
+	}
+
 	return nil
 }
 
@@ -141,9 +146,9 @@ func runQueryWithLastSession(
 		return ErrorBadArguments
 	}
 
-        sessionID, err := sessionManager.Last()
-        if err != nil {
-                return err
+	sessionID, err := sessionManager.Last()
+	if err != nil {
+		return err
 	}
 
 	args = args[2:] // Leave only relevant arguments

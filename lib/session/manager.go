@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/dtrugman/qory/lib/message"
+	"github.com/google/uuid"
 )
 
 const (
@@ -65,6 +66,7 @@ type Manager interface {
 	Store(id string, session Session) error
 	Enum(limit int) (map[string]SessionPreview, error)
 	Last() (string, error)
+	Cleanup(limit int) error
 }
 
 func NewManager(dir string) (Manager, error) {
@@ -171,6 +173,33 @@ func (m *manager) Last() (string, error) {
 	}
 
 	return fileInfos[0].name, nil
+}
+
+func (m *manager) Cleanup(limit int) error {
+	fileInfos, err := getDirFilesSortedByModTime(m.dir)
+	if err != nil {
+		return err
+	}
+
+	unnamedSessions := make([]fileInfo, 0)
+	for _, info := range fileInfos {
+		if _, err := uuid.Parse(info.name); err == nil {
+			unnamedSessions = append(unnamedSessions, info)
+		}
+	}
+
+	if len(unnamedSessions) <= limit {
+		return nil
+	}
+
+	for _, info := range unnamedSessions[limit:] {
+		path := filepath.Join(m.dir, info.name)
+		if err := os.Remove(path); err != nil {
+			return fmt.Errorf("delete file %s: %v", info.name, err)
+		}
+	}
+
+	return nil
 }
 
 func (m *manager) Load(id string) (Session, error) {
