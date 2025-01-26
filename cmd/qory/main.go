@@ -18,9 +18,12 @@ import (
 const (
 	appName = "Qory"
 
-	argConfig  = "--config"
-	argVersion = "--version"
-	argHistory = "--history"
+	argConfig       = "--config"
+	argConfigShort  = "-c"
+	argVersion      = "--version"
+	argVersionShort = "-v"
+	argHistory      = "--history"
+	argHistoryShort = "-h"
 
 	argAPIKey  = "api-key"
 	argBaseURL = "base-url"
@@ -44,9 +47,9 @@ func usage(arg0 string) {
 	fmt.Printf("%s: A language model in your terminal\n", appName)
 	fmt.Printf("\n")
 	fmt.Printf("Usage:  %s [input]...\n", arg0)
-	fmt.Printf("        %s %s\n", arg0, argVersion)
-	fmt.Printf("        %s %s\n", arg0, argHistory)
-	fmt.Printf("        %s %s [options]\n", arg0, argConfig)
+	fmt.Printf("        %s %s|%s\n", arg0, argVersionShort, argVersion)
+	fmt.Printf("        %s %s|%s\n", arg0, argHistoryShort, argHistory)
+	fmt.Printf("        %s %s|%s [options]\n", arg0, argConfigShort, argConfig)
 	fmt.Printf("\n")
 	fmt.Printf("%s is a tool for accessing language models directly from your CLI\n", appName)
 	fmt.Printf("allowing you to specify free-form queries and any local file as context\n")
@@ -345,11 +348,11 @@ func run(args []string) error {
 		return err
 	}
 
-	if action == argVersion {
+	if action == argVersion || action == argVersionShort {
 		return runVersion()
-	} else if action == argConfig {
+	} else if action == argConfig || action == argConfigShort {
 		return runConfig(args, client, conf)
-	} else if action == argHistory {
+	} else if action == argHistory || action == argHistoryShort {
 		return runHistory(sessionManager)
 	} else { // no action, an implicit query
 		return runQuery(args, client, sessionManager, conf)
