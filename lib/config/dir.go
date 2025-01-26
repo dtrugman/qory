@@ -1,51 +1,69 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/dtrugman/qory/lib/profile"
 )
 
 const (
+	osWin         = "windows"
 	envWinAppData = "APPDATA"
+
+	dirDotQory    = ".qory"
 	dirUnixConfig = ".config"
 	dirQory       = "qory"
+	dirPerm       = 0700
 )
 
-// getConfigDir returns the configuration directory, creating it if it doesn't exist
 func getConfigDir() (string, error) {
-	userConfigDir, err := getUserConfigDir()
+	userDir, err := profile.GetUserDir()
 	if err != nil {
 		return "", err
 	}
 
-	configDir := filepath.Join(userConfigDir, dirQory)
+	configDir := filepath.Join(userDir, dirDotQory)
 
-	_, err = os.Stat(configDir)
+	if runtime.GOOS != osWin {
+		oldDir := filepath.Join(userDir, dirUnixConfig, dirQory)
+		if tryMigrateOldConfigDir(oldDir, configDir) {
+			return configDir, nil
+		}
+	}
+
+	return getOrCreateDir(configDir)
+}
+
+func getOrCreateDir(path string) (string, error) {
+	stat, err := os.Stat(path)
 	if err == nil {
-		return configDir, nil
+		if stat.IsDir() {
+			return path, nil
+		} else {
+			return "", fmt.Errorf("already exists, but not a dir")
+		}
 	} else if !os.IsNotExist(err) {
 		return "", err
 	}
 
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(path, dirPerm); err != nil {
 		return "", err
 	}
 
-	return configDir, nil
+	return path, nil
 }
 
-func getUserConfigDir() (string, error) {
-	if runtime.GOOS == "windows" {
-		appData := os.Getenv(envWinAppData)
-		return appData, nil
+func tryMigrateOldConfigDir(oldDir, newDir string) bool {
+	if stat, err := os.Stat(oldDir); err != nil || !stat.IsDir() {
+		return false
 	}
 
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", err
+	if err := os.Rename(oldDir, newDir); err != nil {
+		return false
 	}
 
-	configDir := filepath.Join(homeDir, dirUnixConfig)
-	return configDir, nil
+	return true
 }

@@ -20,6 +20,8 @@ type config struct {
 }
 
 type Config interface {
+	GetConfigSubdir(name string) (string, error)
+
 	Get(key string) (*string, error)
 	Set(key string, value string) error
 	Unset(key string) error
@@ -49,6 +51,11 @@ func (c *config) valueSet(filename string, value string) error {
 func (c *config) valueUnset(filename string) error {
 	path := filepath.Join(c.dir, filename)
 	return fileDelete(path)
+}
+
+func (c *config) GetConfigSubdir(name string) (string, error) {
+	path := filepath.Join(c.dir, name)
+	return getOrCreateDir(path)
 }
 
 func (c *config) Get(key string) (*string, error) {
