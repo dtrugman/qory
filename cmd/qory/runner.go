@@ -49,6 +49,11 @@ func usageQueryWithSession(arg0 string) {
 	fmt.Printf("\n")
 }
 
+func usageQueryWithLastSession(arg0 string) {
+	fmt.Printf("Usage:  %s ^ <args...>\n", arg0)
+	fmt.Printf("\n")
+}
+
 func getSession(sessionManager session.Manager, sessionID string) (session.Session, error) {
 	s, err := sessionManager.Load(sessionID)
 	if err == nil {
@@ -118,8 +123,30 @@ func runQueryWithSession(
 		usageQueryWithSession(args[0])
 		return ErrorBadArguments
 	}
+
 	sessionID := args[2]
 	args = args[3:] // Leave only relevant arguments
+
+	return runQueryInner(args, client, sessionManager, sessionID, conf)
+}
+
+func runQueryWithLastSession(
+	args []string,
+	client model.Client,
+	sessionManager session.Manager,
+	conf config.Config,
+) error {
+	if len(args) < 3 {
+		usageQueryWithLastSession(args[0])
+		return ErrorBadArguments
+	}
+
+        sessionID, err := sessionManager.Last()
+        if err != nil {
+                return err
+	}
+
+	args = args[2:] // Leave only relevant arguments
 
 	return runQueryInner(args, client, sessionManager, sessionID, conf)
 }

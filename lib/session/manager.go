@@ -64,6 +64,7 @@ type Manager interface {
 	Load(id string) (Session, error)
 	Store(id string, session Session) error
 	Enum(limit int) (map[string]SessionPreview, error)
+	Last() (string, error)
 }
 
 func NewManager(dir string) (Manager, error) {
@@ -107,21 +108,21 @@ func (m *manager) loadSessionSnippet(filename string) (string, error) {
 	return content, nil
 }
 
-func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
-	files, err := os.ReadDir(m.dir)
+func getDirFilesSortedByModTime(dir string) ([]fileInfo, error) {
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("read dir: %v", err)
 	}
 
 	fileInfos := make([]fileInfo, 0, len(files))
-	for _, f := range files {
-		info, err := f.Info()
+	for _, file := range files {
+		info, err := file.Info()
 		if err != nil {
 			return nil, err
 		}
 
 		fileInfos = append(fileInfos, fileInfo{
-			name:    f.Name(),
+			name:    file.Name(),
 			modTime: info.ModTime(),
 		})
 	}
@@ -129,6 +130,15 @@ func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
 	sort.Slice(fileInfos, func(i, j int) bool {
 		return fileInfos[i].modTime.After(fileInfos[j].modTime)
 	})
+
+	return fileInfos, nil
+}
+
+func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
+	fileInfos, err := getDirFilesSortedByModTime(m.dir)
+	if err != nil {
+		return nil, err
+	}
 
 	if limit > 0 && limit < len(fileInfos) {
 		fileInfos = fileInfos[:limit]
@@ -148,6 +158,19 @@ func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
 	}
 
 	return result, nil
+}
+
+func (m *manager) Last() (string, error) {
+	fileInfos, err := getDirFilesSortedByModTime(m.dir)
+	if err != nil {
+		return "", err
+	}
+
+	if len(fileInfos) == 0 {
+		return "", fmt.Errorf("no sessions")
+	}
+
+	return fileInfos[0].name, nil
 }
 
 func (m *manager) Load(id string) (Session, error) {

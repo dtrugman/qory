@@ -26,6 +26,7 @@ const (
 	argHistoryShort = "-h"
 	argSession      = "--session"
 	argSessionShort = "-s"
+	argLastSession  = "^"
 
 	argAPIKey  = "api-key"
 	argBaseURL = "base-url"
@@ -66,6 +67,9 @@ func usage(arg0 string) {
 	fmt.Printf("    > %s %s spec \"Please add a health check to my OpenAPI spec\" openapi.yaml\n", arg0, argSession)
 	fmt.Printf("    ... some output from model ...\n")
 	fmt.Printf("    > %s %s spec \"Please define a new parameter for the body\"\n", arg0, argSession)
+	fmt.Printf("\n")
+	fmt.Printf("Follow up on last query\n")
+	fmt.Printf("    > %s %s \"Please use argparse for the arguments\"\n", arg0, argLastSession)
 	fmt.Printf("\n")
 	fmt.Printf("To see your last queries, just run:\n")
 	fmt.Printf("    > %s %s [session-id]\n", arg0, argHistory)
@@ -399,6 +403,8 @@ func run(args []string) error {
 		return runHistory(args, sessionManager)
 	} else if action == argSession || action == argSessionShort {
 		return runQueryWithSession(args, client, sessionManager, conf)
+	} else if action == argLastSession {
+		return runQueryWithLastSession(args, client, sessionManager, conf)
 	} else { // an implicit query without a session
 		return runQuery(args, client, sessionManager, conf)
 	}
