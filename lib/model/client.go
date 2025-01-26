@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
@@ -20,7 +21,7 @@ type client struct {
 
 type Client interface {
 	AvailableModels() ([]string, error)
-	Query(model string, systemPrompt *string, userPrompt string)
+	Query(model string, systemPrompt *string, userPrompt string) (string, error)
 }
 
 func NewClient(apiKey *string, baseURL *string) Client {
@@ -74,7 +75,7 @@ func (c *client) AvailableModels() ([]string, error) {
 	return modelNames, nil
 }
 
-func (c *client) Query(model string, systemPrompt *string, userPrompt string) {
+func (c *client) Query(model string, systemPrompt *string, userPrompt string) (string, error) {
 	ctx := context.Background()
 
 	messages := make([]openai.ChatCompletionMessageParamUnion, 0)
@@ -82,6 +83,8 @@ func (c *client) Query(model string, systemPrompt *string, userPrompt string) {
 		messages = append(messages, openai.SystemMessage(*systemPrompt))
 	}
 	messages = append(messages, openai.UserMessage(userPrompt))
+
+	var aggregator strings.Builder
 
 	stream := c.openaiClient.Chat.Completions.NewStreaming(ctx, openai.ChatCompletionNewParams{
 		Messages: openai.F(messages),
@@ -93,7 +96,9 @@ func (c *client) Query(model string, systemPrompt *string, userPrompt string) {
 		if len(event.Choices) > 0 {
 			choice := event.Choices[0]
 			if choice.Delta.Content != "" {
-				fmt.Print(choice.Delta.Content)
+				content := choice.Delta.Content
+				aggregator.WriteString(content)
+				fmt.Print(content)
 			}
 		}
 	}
@@ -101,7 +106,10 @@ func (c *client) Query(model string, systemPrompt *string, userPrompt string) {
 	if err := stream.Err(); err != nil {
 		parsed := c.parseError(err)
 		fmt.Printf("Error: %v", parsed)
+		return "", err
 	}
 
 	fmt.Println("")
+
+	return aggregator.String(), nil
 }

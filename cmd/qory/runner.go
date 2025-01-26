@@ -7,6 +7,8 @@ import (
 
 	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/model"
+	"github.com/dtrugman/qory/lib/session"
+	"github.com/google/uuid"
 )
 
 func readFile(filepath string) (*string, error) {
@@ -44,7 +46,7 @@ func buildPrompt(args []string) string {
 	return promptBuilder.String()
 }
 
-func runQuery(args []string, client model.Client, conf config.Config) error {
+func runQuery(args []string, client model.Client, sessions session.Manager, conf config.Config) error {
 	modelName, err := conf.Get(config.Model)
 	if modelName == nil {
 		return fmt.Errorf("model is not set")
@@ -58,6 +60,36 @@ func runQuery(args []string, client model.Client, conf config.Config) error {
 	}
 
 	prompt := buildPrompt(args)
-	client.Query(*modelName, systemPrompt, prompt)
+	response, err := client.Query(*modelName, systemPrompt, prompt)
+	if err != nil {
+		return nil // Error is reported inside atm
+	}
+
+	messages := make([]session.Message, 0)
+
+	if systemPrompt != nil {
+		messages = append(messages, session.Message{
+			Role:    "system",
+			Content: *systemPrompt,
+		})
+	}
+
+	messages = append(messages, session.Message{
+		Role:    "user",
+		Content: prompt,
+	})
+
+	messages = append(messages, session.Message{
+		Role:    "assistant",
+		Content: response,
+	})
+
+	session := session.Session{
+		Messages: messages,
+	}
+
+	id := uuid.New()
+	sessions.Store(id.String(), session)
+
 	return nil
 }

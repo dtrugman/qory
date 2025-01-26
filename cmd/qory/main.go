@@ -8,9 +8,11 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/model"
+	"github.com/dtrugman/qory/lib/session"
 )
 
 const (
@@ -18,6 +20,7 @@ const (
 
 	argConfig  = "--config"
 	argVersion = "--version"
+	argHistory = "--history"
 
 	argAPIKey  = "api-key"
 	argBaseURL = "base-url"
@@ -27,6 +30,8 @@ const (
 	argGet   = "get"
 	argSet   = "set"
 	argUnset = "unset"
+
+	historyLength = 10
 )
 
 var (
@@ -39,8 +44,9 @@ func usage(arg0 string) {
 	fmt.Printf("%s: A language model in your terminal\n", appName)
 	fmt.Printf("\n")
 	fmt.Printf("Usage:  %s [input]...\n", arg0)
-	fmt.Printf("        %s --version\n", arg0)
-	fmt.Printf("        %s --config [options]\n", arg0)
+	fmt.Printf("        %s %s\n", arg0, argVersion)
+	fmt.Printf("        %s %s\n", arg0, argHistory)
+	fmt.Printf("        %s %s [options]\n", arg0, argConfig)
 	fmt.Printf("\n")
 	fmt.Printf("%s is a tool for accessing language models directly from your CLI\n", appName)
 	fmt.Printf("allowing you to specify free-form queries and any local file as context\n")
@@ -51,8 +57,11 @@ func usage(arg0 string) {
 	fmt.Printf("A query with an attached local file as input, would look like this:\n")
 	fmt.Printf("    > %s \"Please add a health check to my OpenAPI spec\" openapi.yaml\n", arg0)
 	fmt.Printf("\n")
+	fmt.Printf("To see your last queries, just run:\n")
+	fmt.Printf("    > %s %s\n", arg0, argHistory)
+	fmt.Printf("\n")
 	fmt.Printf("To see the configuration options, please run:\n")
-	fmt.Printf("    > %s --config\n", arg0)
+	fmt.Printf("    > %s %s\n", arg0, argConfig)
 	fmt.Printf("\n")
 }
 
@@ -235,6 +244,23 @@ func runVersion() error {
 	return nil
 }
 
+func runHistory(sessionManager session.Manager) error {
+	sessions, err := sessionManager.Enum(historyLength)
+	if err != nil {
+		return err
+	}
+
+	for id, preview := range sessions {
+		fmt.Printf("=== %s (%s) ===\n", id, preview.UpdatedAt.Format(time.RFC822))
+
+		// If there's a newline at the end, assume it's the end of the
+		snippet, _ := strings.CutSuffix(preview.Snippet, "\n")
+		fmt.Printf("%s\n", snippet)
+	}
+
+	return nil
+}
+
 func runConfig(args []string, client model.Client, conf config.Config) error {
 	if len(args) < 3 {
 		usageConfig(args[0])
@@ -288,6 +314,15 @@ func buildClient(conf config.Config) (model.Client, error) {
 	return client, nil
 }
 
+func buildSessionManager(conf config.Config) (session.Manager, error) {
+	dir, err := conf.GetConfigSubdir(session.SessionsDirName)
+	if err != nil {
+		return nil, err
+	}
+
+	return session.NewManager(dir)
+}
+
 func run(args []string) error {
 	if len(args) < 2 {
 		usage(args[0])
@@ -305,12 +340,19 @@ func run(args []string) error {
 		return err
 	}
 
+	sessionManager, err := buildSessionManager(conf)
+	if err != nil {
+		return err
+	}
+
 	if action == argVersion {
 		return runVersion()
 	} else if action == argConfig {
 		return runConfig(args, client, conf)
+	} else if action == argHistory {
+		return runHistory(sessionManager)
 	} else { // no action, an implicit query
-		return runQuery(args, client, conf)
+		return runQuery(args, client, sessionManager, conf)
 	}
 }
 
