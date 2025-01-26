@@ -123,6 +123,7 @@ func (c *client) Query(model string, messages []message.Message) (string, error)
 		return "", err
 	}
 
+	aggregator.WriteString("\n")
 	fmt.Println("")
 
 	return aggregator.String(), nil
