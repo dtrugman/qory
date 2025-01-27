@@ -15,13 +15,29 @@ qory "Please create a basic OpenAPI yaml template" > openapi.yaml
 Add context from existing files:
 
 ```bash
-qory openapi.yaml main.py "Please implement the endpoint /ping in my python server" > ping.py
+qory openapi.yaml main.py "Please add a /ping endpoint to python server" > ping.py
 ```
 
 Integrate shell command output:
 
 ```bash
 qory "This is my project dir" "$(ls)" "How should I improve it?"
+```
+
+## 💥 **NEW**: Support for sessions
+
+Keep refining and chatting with the model to improve results.
+
+Follow up on last query:
+
+```bash
+qory ^ "With that project structure, where should I put my integration tests?"
+```
+
+Use smart sessions:
+
+```bash
+qory -s gosort "Please implement a method to find all files in a dir and sort them"
 ```
 
 ## 🌟 Install
@@ -87,7 +103,7 @@ Ensure it runs successfully.
 
 Before using Qory, set up your API key and preferred model.
 
-Save once. Configuration is stored in `~/.config/qory` on MacOS/Linux or `%APPDATA%` on Windows.
+Save once. Configuration is stored in `~/.qory` on MacOS/Linux or `%APPDATA%` on Windows.
 
 ### 📌 Model Selection
 
