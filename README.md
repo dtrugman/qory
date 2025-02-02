@@ -1,5 +1,3 @@
-![qory logo](./img/qory.png)
-
 # 🚀 Qory
 
 **A Language Model in Your Terminal**
