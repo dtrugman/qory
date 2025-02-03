@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
 	"os"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -139,119 +136,35 @@ func usageConfig(arg0 string) {
 	fmt.Printf("\n")
 }
 
-func validateNothing(value string) error {
-	return nil
-}
-
-func validateBaseURL(value string) error {
-	if !strings.HasSuffix(value, "/") {
-		return fmt.Errorf("must end with a '/'")
-	} else {
-		return nil
-	}
-}
-
-func promptUserInput() (string, error) {
-	fmt.Print("Enter value: ")
-
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(input), nil
-}
-
-func promptFromList(list []string) (string, error) {
-	for i, value := range list {
-		fmt.Printf("%d. %s\n", i+1, value)
-	}
-
-	fmt.Print("Choose option: ")
-
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return "", err
-	}
-	input = strings.TrimSuffix(input, "\n")
-
-	index, err := strconv.Atoi(input)
-	if err != nil {
-		return "", fmt.Errorf("invalid number")
-	}
-
-	index = index - 1
-	if index < 0 || index >= len(list) {
-		return "", fmt.Errorf("bad selection")
-	}
-
-	return list[index], nil
-}
-
 func runConfigKey(
 	args []string,
-	conf config.Config,
-	key string,
-	desc string,
-	valueValidator func(string) error,
-	keyUsage func(string),
-	inputPrompt func() (string, error),
+	param Param,
+	showUsage func(arg string),
 ) error {
 	if len(args) < 4 {
-		keyUsage(args[0])
+		showUsage(args[0])
 		return ErrorBadArguments
 	}
 	op := args[3]
 
 	if op == argGet {
-		if value, err := conf.Get(key); err != nil {
-			return err
-		} else if value == nil {
-			fmt.Printf("No value for %s\n", desc)
-			return nil
-		} else {
-			fmt.Printf("%s\n", *value)
-			return nil
-		}
+		return param.Get()
 	}
 
 	if op == argUnset {
-		if err := conf.Unset(key); err != nil {
-			return err
-		} else {
-			fmt.Printf("Successfuly unset %s\n", desc)
-			return nil
-		}
+		return param.Unset()
 	}
 
 	if op == argSet {
-		var err error
-		var value string
-		if len(args) != 5 {
-			value, err = inputPrompt()
-		} else {
-			value, err = args[4], nil
+		var value *string = nil
+		if len(args) >= 5 {
+			value = &args[4]
 		}
 
-		if err != nil {
-			return err
-		}
-
-		if err := valueValidator(value); err != nil {
-			return err
-		}
-
-		if err := conf.Set(key, value); err != nil {
-			return err
-		} else {
-			fmt.Printf("Successfuly set %s\n", desc)
-			return nil
-		}
+		return param.Set(value)
 	}
 
-	keyUsage(args[0])
+	showUsage(args[0])
 	return ErrorBadArguments
 }
 
@@ -320,31 +233,18 @@ func runConfig(args []string, client model.Client, conf config.Config) error {
 	}
 	key := args[2]
 
-	promptModelSelection := func() (string, error) {
-		models, err := client.AvailableModels()
-		if err != nil {
-			return "", err
-		}
-		sort.Strings(models)
-		return promptFromList(models)
-	}
-
 	if key == argAPIKey {
-		return runConfigKey(
-			args, conf, config.APIKey, "API key",
-			validateNothing, usageConfigAPIKey, promptUserInput)
+		param := NewParam(conf, config.APIKey)
+		return runConfigKey(args, param, usageConfigAPIKey)
 	} else if key == argBaseURL {
-		return runConfigKey(
-			args, conf, config.BaseURL, "base URL",
-			validateBaseURL, usageConfigBaseURL, promptUserInput)
+		param := NewParamBaseURL(conf, config.BaseURL)
+		return runConfigKey(args, param, usageConfigBaseURL)
 	} else if key == argModel {
-		return runConfigKey(
-			args, conf, config.Model, "model",
-			validateNothing, usageConfigModel, promptModelSelection)
+		param := NewParamModel(conf, config.Model, client)
+		return runConfigKey(args, param, usageConfigModel)
 	} else if key == argPrompt {
-		return runConfigKey(
-			args, conf, config.Prompt, "prompt",
-			validateNothing, usageConfigPrompt, promptUserInput)
+		param := NewParam(conf, config.APIKey)
+		return runConfigKey(args, param, usageConfigPrompt)
 	} else {
 		usageConfig(args[0])
 		return ErrorBadArguments
