@@ -12,6 +12,7 @@ type paramSetter struct {
 type ParamSetter interface {
 	PromptValue() (string, error)
 	ValidateValue(value string) error
+	AdjustValue(value *string) error
 }
 
 func (s *paramSetter) PromptValue() (string, error) {
@@ -19,6 +20,10 @@ func (s *paramSetter) PromptValue() (string, error) {
 }
 
 func (s *paramSetter) ValidateValue(value string) error {
+	return nil
+}
+
+func (s *paramSetter) AdjustValue(value *string) error {
 	return nil
 }
 
@@ -75,6 +80,10 @@ func (p *paramBase) Set(
 	}
 
 	if err := p.setter.ValidateValue(*value); err != nil {
+		return err
+	}
+
+	if err := p.setter.AdjustValue(value); err != nil {
 		return err
 	}
 
