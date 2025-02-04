@@ -68,19 +68,19 @@ For a quick download and install, choose your preferred method:
 - **curl**:
 
   ```bash
-  curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.1/qory_0.2.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
   ```
 
 - **wget**:
 
   ```bash
-  wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.2.1/qory_0.2.1_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
   ```
 
 Advanced users can install in **any other dir in your PATH**:
 
 ```bash
-curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.1/qory_0.2.1_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
+curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
 ```
 
 ⚙️ Remember to configure before first use by visiting the [Configuration](#configuration) section.
