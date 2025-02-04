@@ -203,8 +203,9 @@ func runHistoryLast(sessionManager session.Manager) error {
 		return err
 	}
 
-	for id, preview := range sessions {
-		fmt.Printf("=== %s (%s) ===\n", id, preview.UpdatedAt.Format(time.RFC822))
+	for _, preview := range sessions {
+		fmt.Printf("=== %s (%s) ===\n",
+			preview.Name, preview.UpdatedAt.Format(time.RFC822))
 
 		// If there's a newline at the end, assume it's the end of the
 		snippet, _ := strings.CutSuffix(preview.Snippet, "\n")

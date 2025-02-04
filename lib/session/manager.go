@@ -48,6 +48,7 @@ func (s *Session) AddMessage(m message.Message) {
 }
 
 type SessionPreview struct {
+	Name      string
 	UpdatedAt time.Time
 	Snippet   string
 }
@@ -64,7 +65,7 @@ type manager struct {
 type Manager interface {
 	Load(id string) (Session, error)
 	Store(id string, session Session) error
-	Enum(limit int) (map[string]SessionPreview, error)
+	Enum(limit int) ([]SessionPreview, error)
 	Last() (string, error)
 	Cleanup(limit int) error
 }
@@ -136,7 +137,7 @@ func getDirFilesSortedByModTime(dir string) ([]fileInfo, error) {
 	return fileInfos, nil
 }
 
-func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
+func (m *manager) Enum(limit int) ([]SessionPreview, error) {
 	fileInfos, err := getDirFilesSortedByModTime(m.dir)
 	if err != nil {
 		return nil, err
@@ -146,17 +147,18 @@ func (m *manager) Enum(limit int) (map[string]SessionPreview, error) {
 		fileInfos = fileInfos[:limit]
 	}
 
-	result := make(map[string]SessionPreview)
+	result := make([]SessionPreview, 0)
 	for _, info := range fileInfos {
 		snippet, err := m.loadSessionSnippet(info.name)
 		if err != nil {
 			return nil, err
 		}
 
-		result[info.name] = SessionPreview{
+		result = append(result, SessionPreview{
+			Name:      info.name,
 			UpdatedAt: info.modTime,
 			Snippet:   snippet,
-		}
+		})
 	}
 
 	return result, nil
