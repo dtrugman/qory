@@ -243,7 +243,7 @@ func runConfig(args []string, client model.Client, conf config.Config) error {
 		param := NewParamModel(conf, config.Model, client)
 		return runConfigKey(args, param, usageConfigModel)
 	} else if key == argPrompt {
-		param := NewParam(conf, config.APIKey)
+		param := NewParam(conf, config.Prompt)
 		return runConfigKey(args, param, usageConfigPrompt)
 	} else {
 		usageConfig(args[0])
