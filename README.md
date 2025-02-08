@@ -1,5 +1,7 @@
 # 🚀 Qory
 
+![version](https://img.shields.io/github/v/release/dtrugman/qory?color=green)
+
 **A Language Model in Your Terminal**
 
 💻 Skip the alt+tab to your browser!
