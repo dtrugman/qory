@@ -66,10 +66,10 @@ type Manager struct {
 	dir string
 }
 
-func NewManager(dir string) (*Manager, error) {
+func NewManager(dir string) *Manager {
 	return &Manager{
 		dir: dir,
-	}, nil
+	}
 }
 
 func (m *Manager) validID(id string) bool {

@@ -2,60 +2,32 @@ package main
 
 import (
 	"fmt"
-	"iter"
-	"maps"
 	"sort"
 	"strings"
+
+	"github.com/dtrugman/qory/lib/util"
 )
 
-type paramSetterModel struct {
-	paramSetter
-
-	client Client
-}
-
-func NewParamModel(conf Config, key string, client Client) Param {
-	return &paramBase{
-		conf:   conf,
-		key:    key,
-		setter: &paramSetterModel{client: client},
-	}
-}
-
-func seqToSlice[T any](seq iter.Seq[T]) []T {
-	var result []T
-	for value := range seq {
-		result = append(result, value)
-	}
-	return result
-}
-
-func allHaveProviders(models []string) bool {
+func modelsHaveProviders(models []string) bool {
 	for _, model := range models {
 		if !strings.Contains(model, "/") {
 			return false
 		}
 	}
-
 	return true
 }
 
-func (p *paramSetterModel) promptModelsWithProviders(models []string) (string, error) {
-	providers := make(map[string][]string, 0)
+func promptModelsWithProviders(models []string) (string, error) {
+	providers := make(map[string][]string)
 	for _, model := range models {
 		parts := strings.SplitN(model, "/", 2)
 		if len(parts) != 2 {
 			return "", fmt.Errorf("model missing provider: %s", model)
 		}
-
-		providerName := parts[0]
-		modelName := parts[1]
-
-		providers[providerName] = append(providers[providerName], modelName)
+		providers[parts[0]] = append(providers[parts[0]], parts[1])
 	}
 
-	providerIter := maps.Keys(providers)
-	providerNames := seqToSlice(providerIter)
+	providerNames := util.MapKeys(providers)
 	sort.Strings(providerNames)
 
 	providerSelected, err := promptFromList(providerNames)
@@ -74,20 +46,15 @@ func (p *paramSetterModel) promptModelsWithProviders(models []string) (string, e
 	return fmt.Sprintf("%s/%s", providerSelected, modelSelected), nil
 }
 
-func (p *paramSetterModel) promptModelsWithoutProviders(models []string) (string, error) {
+func promptModelsWithoutProviders(models []string) (string, error) {
 	sort.Strings(models)
 	return promptFromList(models)
 }
 
-func (p *paramSetterModel) PromptValue() (string, error) {
-	models, err := p.client.AvailableModels()
-	if err != nil {
-		return "", err
-	}
-
-	if allHaveProviders(models) {
-		return p.promptModelsWithProviders(models)
+func promptModel(models []string) (string, error) {
+	if modelsHaveProviders(models) {
+		return promptModelsWithProviders(models)
 	} else {
-		return p.promptModelsWithoutProviders(models)
+		return promptModelsWithoutProviders(models)
 	}
 }
