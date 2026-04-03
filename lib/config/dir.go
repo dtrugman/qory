@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-
-	"github.com/dtrugman/qory/lib/profile"
 )
 
 const (
@@ -13,12 +11,7 @@ const (
 	dirPerm    = 0700
 )
 
-func getConfigDir() (string, error) {
-	userDir, err := profile.GetUserDir()
-	if err != nil {
-		return "", err
-	}
-
+func getConfigDir(userDir string) (string, error) {
 	dir := filepath.Join(userDir, dirDotQory)
 	return getOrCreateDir(dir)
 }

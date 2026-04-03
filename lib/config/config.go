@@ -27,8 +27,8 @@ type Config interface {
 	Unset(key string) error
 }
 
-func NewConfig() (Config, error) {
-	configDir, err := getConfigDir()
+func NewConfig(userDir string) (Config, error) {
+	configDir, err := getConfigDir(userDir)
 	if err != nil {
 		return nil, err
 	}

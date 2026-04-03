@@ -9,6 +9,7 @@ import (
 
 	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/model"
+	"github.com/dtrugman/qory/lib/profile"
 	"github.com/dtrugman/qory/lib/session"
 )
 
@@ -283,7 +284,12 @@ func run(args []string) error {
 	}
 	action := args[1]
 
-	conf, err := config.NewConfig()
+	userDir, err := profile.GetUserDir()
+	if err != nil {
+		return err
+	}
+
+	conf, err := config.NewConfig(userDir)
 	if err != nil {
 		return err
 	}
