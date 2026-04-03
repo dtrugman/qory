@@ -32,6 +32,10 @@ var (
 	ErrNotFound  = errors.New("unknown session id")
 )
 
+var (
+	validIDRegexp = regexp.MustCompile(ValidIDPattern)
+)
+
 type Session struct {
 	Messages []message.Message `json:"messages"`
 }
@@ -69,9 +73,7 @@ func NewManager(dir string) (*Manager, error) {
 }
 
 func (m *Manager) validID(id string) bool {
-	pattern := "^[a-zA-Z0-9_-]+$"
-	match, _ := regexp.MatchString(pattern, id)
-	return match
+	return validIDRegexp.MatchString(id)
 }
 
 func (m *Manager) loadSessionSnippet(filename string) (string, error) {
