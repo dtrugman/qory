@@ -12,20 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-func readFile(filepath string) (*string, error) {
-	content, err := os.ReadFile(filepath)
-	if err == nil {
-		contentStr := string(content)
-		return &contentStr, nil
-	}
-
-	if os.IsNotExist(err) {
-		return nil, nil
-	} else {
-		return nil, err
-	}
-}
-
 func buildUserPrompt(args []string) string {
 	var promptBuilder strings.Builder
 
