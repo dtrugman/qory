@@ -58,31 +58,23 @@ type fileInfo struct {
 	modTime time.Time
 }
 
-type manager struct {
+type Manager struct {
 	dir string
 }
 
-type Manager interface {
-	Load(id string) (Session, error)
-	Store(id string, session Session) error
-	Enum(limit int) ([]SessionPreview, error)
-	Last() (string, error)
-	Cleanup(limit int) error
-}
-
-func NewManager(dir string) (Manager, error) {
-	return &manager{
+func NewManager(dir string) (*Manager, error) {
+	return &Manager{
 		dir: dir,
 	}, nil
 }
 
-func (m *manager) validID(id string) bool {
+func (m *Manager) validID(id string) bool {
 	pattern := "^[a-zA-Z0-9_-]+$"
 	match, _ := regexp.MatchString(pattern, id)
 	return match
 }
 
-func (m *manager) loadSessionSnippet(filename string) (string, error) {
+func (m *Manager) loadSessionSnippet(filename string) (string, error) {
 	session, err := m.Load(filename)
 	if err != nil {
 		return "", err
@@ -137,7 +129,7 @@ func getDirFilesSortedByModTime(dir string) ([]fileInfo, error) {
 	return fileInfos, nil
 }
 
-func (m *manager) Enum(limit int) ([]SessionPreview, error) {
+func (m *Manager) Enum(limit int) ([]SessionPreview, error) {
 	fileInfos, err := getDirFilesSortedByModTime(m.dir)
 	if err != nil {
 		return nil, err
@@ -164,7 +156,7 @@ func (m *manager) Enum(limit int) ([]SessionPreview, error) {
 	return result, nil
 }
 
-func (m *manager) Last() (string, error) {
+func (m *Manager) Last() (string, error) {
 	fileInfos, err := getDirFilesSortedByModTime(m.dir)
 	if err != nil {
 		return "", err
@@ -177,7 +169,7 @@ func (m *manager) Last() (string, error) {
 	return fileInfos[0].name, nil
 }
 
-func (m *manager) Cleanup(limit int) error {
+func (m *Manager) Cleanup(limit int) error {
 	fileInfos, err := getDirFilesSortedByModTime(m.dir)
 	if err != nil {
 		return err
@@ -204,7 +196,7 @@ func (m *manager) Cleanup(limit int) error {
 	return nil
 }
 
-func (m *manager) Load(id string) (Session, error) {
+func (m *Manager) Load(id string) (Session, error) {
 	if !m.validID(id) {
 		return Session{}, ErrInvalidID
 	}
@@ -225,7 +217,7 @@ func (m *manager) Load(id string) (Session, error) {
 	return session, err
 }
 
-func (m *manager) Store(id string, session Session) error {
+func (m *Manager) Store(id string, session Session) error {
 	if !m.validID(id) {
 		return ErrInvalidID
 	}

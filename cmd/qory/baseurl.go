@@ -2,8 +2,6 @@ package main
 
 import (
 	"strings"
-
-	"github.com/dtrugman/qory/lib/config"
 )
 
 type paramSetterBaseURL struct {
@@ -18,7 +16,7 @@ func (s *paramSetterBaseURL) AdjustValue(value *string) error {
 	return nil
 }
 
-func NewParamBaseURL(conf config.Config, key string) Param {
+func NewParamBaseURL(conf Config, key string) Param {
 	return &paramBase{
 		conf:   conf,
 		key:    key,

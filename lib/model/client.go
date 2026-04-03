@@ -16,16 +16,11 @@ var (
 	errorEmptyResponse = errors.New("empty response")
 )
 
-type client struct {
+type Client struct {
 	openaiClient *openai.Client
 }
 
-type Client interface {
-	AvailableModels() ([]string, error)
-	Query(model string, messages []message.Message) (string, error)
-}
-
-func NewClient(apiKey *string, baseURL *string) Client {
+func NewClient(apiKey *string, baseURL *string) *Client {
 	var options []option.RequestOption
 
 	if apiKey != nil {
@@ -38,12 +33,12 @@ func NewClient(apiKey *string, baseURL *string) Client {
 
 	openaiClient := openai.NewClient(options...)
 
-	return &client{
+	return &Client{
 		openaiClient: openaiClient,
 	}
 }
 
-func (c *client) parseError(raw error) error {
+func (c *Client) parseError(raw error) error {
 	var apierr *openai.Error
 	if !errors.As(raw, &apierr) {
 		return raw
@@ -59,7 +54,7 @@ func (c *client) parseError(raw error) error {
 	return fmt.Errorf("%s", errobj.Error.Message)
 }
 
-func (c *client) AvailableModels() ([]string, error) {
+func (c *Client) AvailableModels() ([]string, error) {
 	ctx := context.Background()
 
 	modelNames := make([]string, 0)
@@ -76,7 +71,7 @@ func (c *client) AvailableModels() ([]string, error) {
 	return modelNames, nil
 }
 
-func (c *client) translateMessage(m message.Message) openai.ChatCompletionMessageParamUnion {
+func (c *Client) translateMessage(m message.Message) openai.ChatCompletionMessageParamUnion {
 	switch m.Role {
 	case message.RoleUser:
 		return openai.UserMessage(m.Content)
@@ -89,7 +84,7 @@ func (c *client) translateMessage(m message.Message) openai.ChatCompletionMessag
 	}
 }
 
-func (c *client) Query(model string, messages []message.Message) (string, error) {
+func (c *Client) Query(model string, messages []message.Message) (string, error) {
 	ctx := context.Background()
 
 	openAIMessages := make([]openai.ChatCompletionMessageParamUnion, 0)

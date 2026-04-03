@@ -6,18 +6,15 @@ import (
 	"maps"
 	"sort"
 	"strings"
-
-	"github.com/dtrugman/qory/lib/config"
-	"github.com/dtrugman/qory/lib/model"
 )
 
 type paramSetterModel struct {
 	paramSetter
 
-	client model.Client
+	client Client
 }
 
-func NewParamModel(conf config.Config, key string, client model.Client) Param {
+func NewParamModel(conf Config, key string, client Client) Param {
 	return &paramBase{
 		conf:   conf,
 		key:    key,

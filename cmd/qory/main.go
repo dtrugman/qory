@@ -8,10 +8,31 @@ import (
 	"time"
 
 	"github.com/dtrugman/qory/lib/config"
+	"github.com/dtrugman/qory/lib/message"
 	"github.com/dtrugman/qory/lib/model"
 	"github.com/dtrugman/qory/lib/profile"
 	"github.com/dtrugman/qory/lib/session"
 )
+
+type Config interface {
+	GetConfigSubdir(name string) (string, error)
+	Get(key string) (*string, error)
+	Set(key string, value string) error
+	Unset(key string) error
+}
+
+type Client interface {
+	AvailableModels() ([]string, error)
+	Query(model string, messages []message.Message) (string, error)
+}
+
+type SessionManager interface {
+	Load(id string) (session.Session, error)
+	Store(id string, s session.Session) error
+	Enum(limit int) ([]session.SessionPreview, error)
+	Last() (string, error)
+	Cleanup(limit int) error
+}
 
 const (
 	appName = "Qory"
@@ -184,7 +205,7 @@ func usageHistory(arg0 string) {
 	fmt.Printf("\n")
 }
 
-func runHistorySpecific(sessionID string, sessionManager session.Manager) error {
+func runHistorySpecific(sessionID string, sessionManager SessionManager) error {
 	sess, err := sessionManager.Load(sessionID)
 	if err != nil {
 		return err
@@ -198,7 +219,7 @@ func runHistorySpecific(sessionID string, sessionManager session.Manager) error 
 	return nil
 }
 
-func runHistoryLast(sessionManager session.Manager) error {
+func runHistoryLast(sessionManager SessionManager) error {
 	sessions, err := sessionManager.Enum(historyLength)
 	if err != nil {
 		return err
@@ -216,7 +237,7 @@ func runHistoryLast(sessionManager session.Manager) error {
 	return nil
 }
 
-func runHistory(args []string, sessionManager session.Manager) error {
+func runHistory(args []string, sessionManager SessionManager) error {
 	if len(args) > 3 {
 		usageHistory(args[0])
 		return ErrorBadArguments
@@ -228,7 +249,7 @@ func runHistory(args []string, sessionManager session.Manager) error {
 	}
 }
 
-func runConfig(args []string, client model.Client, conf config.Config) error {
+func runConfig(args []string, client Client, conf Config) error {
 	if len(args) < 3 {
 		usageConfig(args[0])
 		return ErrorBadArguments
@@ -253,7 +274,7 @@ func runConfig(args []string, client model.Client, conf config.Config) error {
 	}
 }
 
-func buildClient(conf config.Config) (model.Client, error) {
+func buildClient(conf Config) (*model.Client, error) {
 	apiKey, err := conf.Get(config.APIKey)
 	if err != nil {
 		return nil, fmt.Errorf("get API key failed: %w", err)
@@ -268,7 +289,7 @@ func buildClient(conf config.Config) (model.Client, error) {
 	return client, nil
 }
 
-func buildSessionManager(conf config.Config) (session.Manager, error) {
+func buildSessionManager(conf Config) (*session.Manager, error) {
 	dir, err := conf.GetConfigSubdir(session.SessionsDirName)
 	if err != nil {
 		return nil, err

@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newTestConfig(t *testing.T) Config {
+func newTestConfig(t *testing.T) *Config {
 	t.Helper()
 
 	dir := t.TempDir()

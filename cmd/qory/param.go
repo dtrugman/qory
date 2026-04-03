@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-
-	"github.com/dtrugman/qory/lib/config"
 )
 
 type paramSetter struct {
@@ -28,7 +26,7 @@ func (s *paramSetter) AdjustValue(value *string) error {
 }
 
 type paramBase struct {
-	conf   config.Config
+	conf   Config
 	key    string
 	setter ParamSetter
 }
@@ -39,7 +37,7 @@ type Param interface {
 	Set(value *string) error
 }
 
-func NewParam(conf config.Config, key string) Param {
+func NewParam(conf Config, key string) Param {
 	return &paramBase{
 		conf:   conf,
 		key:    key,

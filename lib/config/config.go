@@ -15,57 +15,49 @@ const ( // Public configuration values
 	Prompt  = "prompt"
 )
 
-type config struct {
+type Config struct {
 	dir string
 }
 
-type Config interface {
-	GetConfigSubdir(name string) (string, error)
-
-	Get(key string) (*string, error)
-	Set(key string, value string) error
-	Unset(key string) error
-}
-
-func NewConfig(userDir string) (Config, error) {
+func NewConfig(userDir string) (*Config, error) {
 	configDir, err := getConfigDir(userDir)
 	if err != nil {
 		return nil, err
 	}
 
-	return &config{
+	return &Config{
 		dir: configDir,
 	}, nil
 }
 
-func (c *config) valueGet(filename string) (*string, error) {
+func (c *Config) valueGet(filename string) (*string, error) {
 	path := filepath.Join(c.dir, filename)
 	return fileRead(path)
 }
 
-func (c *config) valueSet(filename string, value string) error {
+func (c *Config) valueSet(filename string, value string) error {
 	path := filepath.Join(c.dir, filename)
 	return fileWrite(path, value)
 }
 
-func (c *config) valueUnset(filename string) error {
+func (c *Config) valueUnset(filename string) error {
 	path := filepath.Join(c.dir, filename)
 	return fileDelete(path)
 }
 
-func (c *config) GetConfigSubdir(name string) (string, error) {
+func (c *Config) GetConfigSubdir(name string) (string, error) {
 	path := filepath.Join(c.dir, name)
 	return getOrCreateDir(path)
 }
 
-func (c *config) Get(key string) (*string, error) {
+func (c *Config) Get(key string) (*string, error) {
 	return c.valueGet(key)
 }
 
-func (c *config) Set(key string, value string) error {
+func (c *Config) Set(key string, value string) error {
 	return c.valueSet(key, value)
 }
 
-func (c *config) Unset(key string) error {
+func (c *Config) Unset(key string) error {
 	return c.valueUnset(key)
 }

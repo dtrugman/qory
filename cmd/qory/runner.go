@@ -8,7 +8,6 @@ import (
 
 	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/message"
-	"github.com/dtrugman/qory/lib/model"
 	"github.com/dtrugman/qory/lib/session"
 	"github.com/google/uuid"
 )
@@ -54,7 +53,7 @@ func usageQueryWithLastSession(arg0 string) {
 	fmt.Printf("\n")
 }
 
-func getSession(sessionManager session.Manager, sessionID string) (session.Session, error) {
+func getSession(sessionManager SessionManager, sessionID string) (session.Session, error) {
 	s, err := sessionManager.Load(sessionID)
 	if err == nil {
 		return s, nil
@@ -69,10 +68,10 @@ func getSession(sessionManager session.Manager, sessionID string) (session.Sessi
 
 func runQueryInner(
 	args []string,
-	client model.Client,
-	sessionManager session.Manager,
+	client Client,
+	sessionManager SessionManager,
 	sessionID string,
-	conf config.Config,
+	conf Config,
 ) error {
 	sess, err := getSession(sessionManager, sessionID)
 	if err != nil {
@@ -120,9 +119,9 @@ func runQueryInner(
 
 func runQueryWithSession(
 	args []string,
-	client model.Client,
-	sessionManager session.Manager,
-	conf config.Config,
+	client Client,
+	sessionManager SessionManager,
+	conf Config,
 ) error {
 	if len(args) < 4 {
 		usageQueryWithSession(args[0])
@@ -137,9 +136,9 @@ func runQueryWithSession(
 
 func runQueryWithLastSession(
 	args []string,
-	client model.Client,
-	sessionManager session.Manager,
-	conf config.Config,
+	client Client,
+	sessionManager SessionManager,
+	conf Config,
 ) error {
 	if len(args) < 3 {
 		usageQueryWithLastSession(args[0])
@@ -158,9 +157,9 @@ func runQueryWithLastSession(
 
 func runQuery(
 	args []string,
-	client model.Client,
-	sessionManager session.Manager,
-	conf config.Config,
+	client Client,
+	sessionManager SessionManager,
+	conf Config,
 ) error {
 	sessionID := uuid.New().String()
 	args = args[1:] // Remove arg0
