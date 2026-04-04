@@ -225,3 +225,31 @@ func (q *Qory) ConfigSetPrompt(value string) error {
 func (q *Qory) ConfigUnsetPrompt() error {
 	return q.configUnset(config.Prompt)
 }
+
+func (q *Qory) ConfigGetMode() (*string, error) {
+	return q.configGet(config.Mode)
+}
+
+func (q *Qory) ConfigSetMode(value string) error {
+	if value != config.ModeNew && value != config.ModeLast {
+		return fmt.Errorf("invalid mode %q: must be %q or %q", value, config.ModeNew, config.ModeLast)
+	}
+	return q.configSet(config.Mode, value)
+}
+
+func (q *Qory) ConfigUnsetMode() error {
+	return q.configUnset(config.Mode)
+}
+
+// QueryDefault runs a query using the configured default mode (new or last).
+// If no mode is configured, it starts a new session.
+func (q *Qory) QueryDefault(inputs []string) error {
+	mode, err := q.conf.Get(config.Mode)
+	if err != nil {
+		return fmt.Errorf("get mode failed: %w", err)
+	}
+	if mode != nil && *mode == config.ModeLast {
+		return q.QueryLast(inputs)
+	}
+	return q.QueryNew(inputs)
+}

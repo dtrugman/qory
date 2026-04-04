@@ -5,6 +5,7 @@ import "github.com/spf13/cobra"
 func newRootCmd(q *Qory) *cobra.Command {
 	var sessionID string
 	var last bool
+	var new_ bool
 
 	cmd := &cobra.Command{
 		Use:   "qory <input...>",
@@ -17,21 +18,29 @@ Examples:
   qory "Please add a health check to my OpenAPI spec" openapi.yaml
   qory --session spec "Please add a health check to my OpenAPI spec" openapi.yaml
   qory --session spec "Please define a new parameter for the body"
-  qory --last "Please use argparse for the arguments"`,
+  qory --last "Please use argparse for the arguments"
+  qory --new "Start fresh regardless of configured mode"`,
 		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if new_ {
+				return q.QueryNew(args)
+			}
 			if last {
 				return q.QueryLast(args)
 			}
 			if sessionID != "" {
 				return q.QuerySession(sessionID, args)
 			}
-			return q.QueryNew(args)
+			return q.QueryDefault(args)
 		},
 	}
 
 	cmd.Flags().StringVarP(&sessionID, "session", "s", "", "Session name to continue")
 	cmd.Flags().BoolVarP(&last, "last", "l", false, "Continue the last session")
+	cmd.Flags().BoolVarP(&new_, "new", "n", false, "Start a new session")
+	cmd.MarkFlagsMutuallyExclusive("new", "last")
+	cmd.MarkFlagsMutuallyExclusive("new", "session")
+	cmd.MarkFlagsMutuallyExclusive("last", "session")
 
 	return cmd
 }

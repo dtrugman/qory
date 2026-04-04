@@ -7,26 +7,64 @@ import (
 )
 
 func newConfigCmd(q *Qory) *cobra.Command {
+	const noLong = ""
+
+	cmdAPIKey := newConfigKeyCmd("api-key",
+		"API key for the model provider", noLong,
+		q.ConfigGetAPIKey, q.ConfigSetAPIKey, q.ConfigUnsetAPIKey,
+		promptUserInput,
+	)
+
+	cmdBaseURL := newConfigKeyCmd("base-url",
+		"Base URL for the model provider", noLong,
+		q.ConfigGetBaseURL, q.ConfigSetBaseURL, q.ConfigUnsetBaseURL, promptUserInput,
+	)
+
+	cmdModel := newConfigKeyCmd("model",
+		"Model to use for queries", noLong,
+		q.ConfigGetModel, q.ConfigSetModel, q.ConfigUnsetModel,
+		func() (string, error) {
+			models, err := q.AvailableModels()
+			if err != nil {
+				return "", err
+			}
+			return promptModel(models)
+		},
+	)
+
+	cmdPrompt := newConfigKeyCmd("prompt",
+		"Persistent system prompt prepended to every new session", noLong,
+		q.ConfigGetPrompt, q.ConfigSetPrompt, q.ConfigUnsetPrompt,
+		promptUserInput,
+	)
+
+	cmdMode := newConfigKeyCmd(
+		"mode",
+		`Controls the default session behavior ("new" or "last")`,
+		`Controls the default session behavior when no session flag is provided:
+
+  new   Start a fresh session each time (default)
+  last  Automatically continue the most recent session
+
+Use --new or --last on individual queries to override the configured mode.`,
+		q.ConfigGetMode, q.ConfigSetMode, q.ConfigUnsetMode,
+		func() (string, error) {
+			return promptFromList([]string{"new", "last"})
+		},
+	)
+
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Manage configuration",
 	}
 	cmd.AddCommand(
-		newConfigKeyCmd("api-key", "API key for the model provider",
-			q.ConfigGetAPIKey, q.ConfigSetAPIKey, q.ConfigUnsetAPIKey, promptUserInput),
-		newConfigKeyCmd("base-url", "Base URL for the model provider",
-			q.ConfigGetBaseURL, q.ConfigSetBaseURL, q.ConfigUnsetBaseURL, promptUserInput),
-		newConfigKeyCmd("model", "Model to use for queries",
-			q.ConfigGetModel, q.ConfigSetModel, q.ConfigUnsetModel, func() (string, error) {
-				models, err := q.AvailableModels()
-				if err != nil {
-					return "", err
-				}
-				return promptModel(models)
-			}),
-		newConfigKeyCmd("prompt", "Persistent system prompt prepended to every new session",
-			q.ConfigGetPrompt, q.ConfigSetPrompt, q.ConfigUnsetPrompt, promptUserInput),
+		cmdAPIKey,
+		cmdBaseURL,
+		cmdPrompt,
+		cmdModel,
+		cmdMode,
 	)
+
 	return cmd
 }
 
@@ -34,12 +72,13 @@ func newConfigCmd(q *Qory) *cobra.Command {
 func newConfigKeyCmd(
 	use string,
 	short string,
+	long string,
 	getter func() (*string, error),
 	setter func(string) error,
 	unsetter func() error,
 	prompter func() (string, error),
 ) *cobra.Command {
-	cmd := &cobra.Command{Use: use, Short: short}
+	cmd := &cobra.Command{Use: use, Short: short, Long: long}
 	cmd.AddCommand(
 		&cobra.Command{
 			Use:   "get",

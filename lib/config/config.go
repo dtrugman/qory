@@ -13,6 +13,12 @@ const ( // Public configuration values
 	BaseURL = "base_url"
 	Model   = "model"
 	Prompt  = "prompt"
+	Mode    = "mode"
+)
+
+const ( // Valid values for Mode
+	ModeNew  = "new"
+	ModeLast = "last"
 )
 
 type Config struct {

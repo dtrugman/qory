@@ -420,6 +420,101 @@ func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 	client.AssertExpectations(t)
 }
 
+// ---- QueryDefault tests ----
+
+func Test_QueryDefault_NoConfig(t *testing.T) {
+	userText := "hello\n"
+	assistantText := "response"
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	conf.On("Get", "mode").Return((*string)(nil), nil)
+	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Get", "prompt").Return((*string)(nil), nil)
+
+	client.On("Query", "gpt-4o", []message.Message{
+		message.NewUserMessage(userText),
+	}).Return(assistantText, nil)
+
+	sm.On("Store", mock.AnythingOfType("string"), mock.Anything).Return(nil)
+	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+
+	q := NewQory(conf, client, sm)
+	err := q.QueryDefault([]string{"hello"})
+	require.NoError(t, err)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+func Test_QueryDefault_ModeNew(t *testing.T) {
+	userText := "hello\n"
+	assistantText := "response"
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	conf.On("Get", "mode").Return(util.Ptr("new"), nil)
+	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Get", "prompt").Return((*string)(nil), nil)
+
+	client.On("Query", "gpt-4o", []message.Message{
+		message.NewUserMessage(userText),
+	}).Return(assistantText, nil)
+
+	sm.On("Store", mock.AnythingOfType("string"), mock.Anything).Return(nil)
+	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+
+	q := NewQory(conf, client, sm)
+	err := q.QueryDefault([]string{"hello"})
+	require.NoError(t, err)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+func Test_QueryDefault_ModeLast(t *testing.T) {
+	prevUserText := "previous\n"
+	prevAssistantText := "answer"
+	userText := "follow up\n"
+	assistantText := "response"
+
+	existing := session.NewSession()
+	existing.AddMessage(message.NewUserMessage(prevUserText))
+	existing.AddMessage(message.NewAssistantMessage(prevAssistantText))
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	conf.On("Get", "mode").Return(util.Ptr("last"), nil)
+	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	sm.On("Last").Return("last-session", nil)
+	sm.On("Load", "last-session").Return(existing, nil)
+
+	client.On("Query", "gpt-4o", []message.Message{
+		message.NewUserMessage(prevUserText),
+		message.NewAssistantMessage(prevAssistantText),
+		message.NewUserMessage(userText),
+	}).Return(assistantText, nil)
+
+	sm.On("Store", "last-session", mock.Anything).Return(nil)
+	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+
+	q := NewQory(conf, client, sm)
+	err := q.QueryDefault([]string{"follow up"})
+	require.NoError(t, err)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
 // ---- History tests ----
 
 func Test_History_AllCallsEnum(t *testing.T) {
@@ -570,4 +665,53 @@ func Test_Config_SetBaseURLNormalizesTrailingSlash(t *testing.T) {
 	require.NoError(t, err)
 
 	conf.AssertExpectations(t)
+}
+
+func Test_Config_GetRoutesCorrectKey_Mode(t *testing.T) {
+	expected := util.Ptr("new")
+	conf := &MockConfig{}
+	conf.On("Get", "mode").Return(expected, nil)
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	result, err := q.ConfigGetMode()
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+
+	conf.AssertExpectations(t)
+}
+
+func Test_Config_UnsetRoutesCorrectKey_Mode(t *testing.T) {
+	conf := &MockConfig{}
+	conf.On("Unset", "mode").Return(nil)
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	err := q.ConfigUnsetMode()
+	require.NoError(t, err)
+
+	conf.AssertExpectations(t)
+}
+
+func Test_Config_SetMode_AcceptsValidValues(t *testing.T) {
+	for _, value := range []string{"new", "last"} {
+		t.Run(value, func(t *testing.T) {
+			conf := &MockConfig{}
+			conf.On("Set", "mode", value).Return(nil)
+
+			q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+			err := q.ConfigSetMode(value)
+			require.NoError(t, err)
+
+			conf.AssertExpectations(t)
+		})
+	}
+}
+
+func Test_Config_SetMode_RejectsInvalidValue(t *testing.T) {
+	conf := &MockConfig{}
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	err := q.ConfigSetMode("invalid")
+	require.Error(t, err)
+
+	conf.AssertNotCalled(t, "Set", mock.Anything, mock.Anything)
 }
