@@ -53,6 +53,19 @@ Use --new or --last on individual queries to override the configured mode.`,
 		},
 	)
 
+	cmdEditor := newConfigKeyCmd("editor",
+		`Editor to open when no input is provided (default "vi")`,
+		`Controls which editor is opened when qory is run without any input arguments.
+
+The editor is resolved in the following order:
+  1. This config value (if set)
+  2. The $VISUAL environment variable
+  3. The $EDITOR environment variable
+  4. "vi" (built-in default)`,
+		q.ConfigGetEditor, q.ConfigSetEditor, q.ConfigUnsetEditor,
+		promptUserInput,
+	)
+
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Manage configuration",
@@ -63,6 +76,7 @@ Use --new or --last on individual queries to override the configured mode.`,
 		cmdPrompt,
 		cmdModel,
 		cmdMode,
+		cmdEditor,
 	)
 
 	return cmd

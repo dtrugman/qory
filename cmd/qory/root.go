@@ -20,8 +20,18 @@ Examples:
   qory --session spec "Please define a new parameter for the body"
   qory --last "Please use argparse for the arguments"
   qory --new "Start fresh regardless of configured mode"`,
-		Args: cobra.MinimumNArgs(1),
+		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if len(args) == 0 {
+				content, err := q.openEditor()
+				if err != nil {
+					return err
+				}
+				if content == "" {
+					return nil
+				}
+				args = []string{content}
+			}
 			if new_ {
 				return q.QueryNew(args)
 			}

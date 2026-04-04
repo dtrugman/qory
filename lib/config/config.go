@@ -14,6 +14,7 @@ const ( // Public configuration values
 	Model   = "model"
 	Prompt  = "prompt"
 	Mode    = "mode"
+	Editor  = "editor"
 )
 
 const ( // Valid values for Mode
