@@ -249,23 +249,18 @@ func Test_QuerySession_LoadsExistingHistory(t *testing.T) {
 		message.NewAssistantMessage(prevAssistantText),
 		message.NewUserMessage(userText),
 	}).Return(assistantText, nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
-	var stored session.Session
-	sm.On("Store", "my-session", mock.Anything).
-		Run(func(args mock.Arguments) {
-			stored = args.Get(1).(session.Session)
-		}).
-		Return(nil)
+	expectedSession := session.NewSession()
+	expectedSession.AddMessage(message.NewUserMessage(prevUserText))
+	expectedSession.AddMessage(message.NewAssistantMessage(prevAssistantText))
+	expectedSession.AddMessage(message.NewUserMessage(userText))
+	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
+	sm.On("Store", "my-session", expectedSession).Return(nil)
+	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QuerySession("my-session", []string{"follow up"})
 	require.NoError(t, err)
-
-	// 2 existing + 1 new user + 1 new assistant = 4
-	assert.Len(t, stored.Messages, 4)
-	assert.Equal(t, message.RoleUser, stored.Messages[2].Role)
-	assert.Equal(t, message.RoleAssistant, stored.Messages[3].Role)
 
 	sm.AssertExpectations(t)
 	conf.AssertExpectations(t)
@@ -438,7 +433,10 @@ func Test_QueryDefault_NoConfig(t *testing.T) {
 		message.NewUserMessage(userText),
 	}).Return(assistantText, nil)
 
-	sm.On("Store", mock.AnythingOfType("string"), mock.Anything).Return(nil)
+	expectedSession := session.NewSession()
+	expectedSession.AddMessage(message.NewUserMessage(userText))
+	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
+	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
@@ -466,7 +464,10 @@ func Test_QueryDefault_ModeNew(t *testing.T) {
 		message.NewUserMessage(userText),
 	}).Return(assistantText, nil)
 
-	sm.On("Store", mock.AnythingOfType("string"), mock.Anything).Return(nil)
+	expectedSession := session.NewSession()
+	expectedSession.AddMessage(message.NewUserMessage(userText))
+	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
+	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
@@ -503,7 +504,12 @@ func Test_QueryDefault_ModeLast(t *testing.T) {
 		message.NewUserMessage(userText),
 	}).Return(assistantText, nil)
 
-	sm.On("Store", "last-session", mock.Anything).Return(nil)
+	expectedSession := session.NewSession()
+	expectedSession.AddMessage(message.NewUserMessage(prevUserText))
+	expectedSession.AddMessage(message.NewAssistantMessage(prevAssistantText))
+	expectedSession.AddMessage(message.NewUserMessage(userText))
+	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
+	sm.On("Store", "last-session", expectedSession).Return(nil)
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
@@ -708,10 +714,108 @@ func Test_Config_SetMode_AcceptsValidValues(t *testing.T) {
 
 func Test_Config_SetMode_RejectsInvalidValue(t *testing.T) {
 	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
 
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	q := NewQory(conf, client, sm)
 	err := q.ConfigSetMode("invalid")
 	require.Error(t, err)
 
-	conf.AssertNotCalled(t, "Set", mock.Anything, mock.Anything)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+	sm.AssertExpectations(t)
+}
+
+func Test_Config_GetRoutesCorrectKey_Editor(t *testing.T) {
+	expected := util.Ptr("nvim")
+	conf := &MockConfig{}
+	conf.On("Get", "editor").Return(expected, nil)
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	result, err := q.ConfigGetEditor()
+	require.NoError(t, err)
+	assert.Equal(t, expected, result)
+
+	conf.AssertExpectations(t)
+}
+
+func Test_Config_UnsetRoutesCorrectKey_Editor(t *testing.T) {
+	conf := &MockConfig{}
+	conf.On("Unset", "editor").Return(nil)
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	err := q.ConfigUnsetEditor()
+	require.NoError(t, err)
+
+	conf.AssertExpectations(t)
+}
+
+func Test_Config_SetRoutesCorrectKey_Editor(t *testing.T) {
+	conf := &MockConfig{}
+	conf.On("Set", "editor", "nvim").Return(nil)
+
+	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
+	err := q.ConfigSetEditor("nvim")
+	require.NoError(t, err)
+
+	conf.AssertExpectations(t)
+}
+
+// ---- QueryLast error tests ----
+
+func Test_QueryLast_FailsWhenLastErrors(t *testing.T) {
+	lastErr := errors.New("no sessions")
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	sm.On("Last").Return("", lastErr)
+
+	q := NewQory(conf, client, sm)
+	err := q.QueryLast([]string{"hello"})
+	require.ErrorIs(t, err, lastErr)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+// ---- AvailableModels tests ----
+
+func Test_AvailableModels_ReturnsClientModels(t *testing.T) {
+	models := []string{"gpt-4o", "gpt-4o-mini"}
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	client.On("AvailableModels").Return(models, nil)
+
+	q := NewQory(conf, client, sm)
+	result, err := q.AvailableModels()
+	require.NoError(t, err)
+	assert.Equal(t, models, result)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+func Test_AvailableModels_ReturnsErrorOnFailure(t *testing.T) {
+	modelsErr := errors.New("unauthorized")
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	client.On("AvailableModels").Return([]string{}, modelsErr)
+
+	q := NewQory(conf, client, sm)
+	_, err := q.AvailableModels()
+	require.ErrorIs(t, err, modelsErr)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
 }
