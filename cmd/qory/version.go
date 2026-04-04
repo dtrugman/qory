@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
+	"github.com/dtrugman/qory/cmd/qory/biz"
 	"github.com/spf13/cobra"
 )
 
-func newVersionCmd(q *Qory) *cobra.Command {
+func newVersionCmd(q *biz.Qory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "Print version information",

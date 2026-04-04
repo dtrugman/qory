@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 
+	"github.com/dtrugman/qory/cmd/qory/biz"
 	"github.com/spf13/cobra"
 )
 
-func newConfigCmd(q *Qory) *cobra.Command {
+func newConfigCmd(q *biz.Qory) *cobra.Command {
 	const noLong = ""
 
 	cmdAPIKey := newConfigKeyCmd("api-key",

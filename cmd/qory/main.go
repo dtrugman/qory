@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dtrugman/qory/cmd/qory/biz"
 	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/model"
 	"github.com/dtrugman/qory/lib/profile"
 	"github.com/dtrugman/qory/lib/session"
 )
 
-func buildClient(conf Config) (*model.Client, error) {
+func buildClient(conf biz.Config) (*model.Client, error) {
 	apiKey, err := conf.Get(config.APIKey)
 	if err != nil {
 		return nil, fmt.Errorf("get API key failed: %w", err)
@@ -25,7 +26,7 @@ func buildClient(conf Config) (*model.Client, error) {
 	return client, nil
 }
 
-func buildSessionManager(conf Config) (*session.Manager, error) {
+func buildSessionManager(conf biz.Config) (*session.Manager, error) {
 	dir, err := conf.GetConfigSubdir(session.SessionsDirName)
 	if err != nil {
 		return nil, err
@@ -35,7 +36,7 @@ func buildSessionManager(conf Config) (*session.Manager, error) {
 	return manager, nil
 }
 
-func buildQory() (*Qory, error) {
+func buildQory() (*biz.Qory, error) {
 	userDir, err := profile.GetUserDir()
 	if err != nil {
 		return nil, fmt.Errorf("profile: %w", err)
@@ -56,7 +57,7 @@ func buildQory() (*Qory, error) {
 		return nil, fmt.Errorf("session manager: %w", err)
 	}
 
-	q := NewQory(conf, client, sm)
+	q := biz.NewQory(conf, client, sm)
 	return q, nil
 }
 

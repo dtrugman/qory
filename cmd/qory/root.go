@@ -1,8 +1,12 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/dtrugman/qory/cmd/qory/biz"
+	"github.com/dtrugman/qory/lib/editor"
+	"github.com/spf13/cobra"
+)
 
-func newRootCmd(q *Qory) *cobra.Command {
+func newRootCmd(q *biz.Qory) *cobra.Command {
 	var sessionID string
 	var last bool
 	var new_ bool
@@ -23,7 +27,11 @@ Examples:
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				content, err := q.openEditor()
+				editorName, err := q.GetEditor()
+				if err != nil {
+					return err
+				}
+				content, err := editor.Edit(editorName)
 				if err != nil {
 					return err
 				}

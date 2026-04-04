@@ -1,4 +1,4 @@
-package main
+package biz
 
 import (
 	"errors"
@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/dtrugman/qory/lib/config"
-	"github.com/dtrugman/qory/lib/editor"
 	"github.com/dtrugman/qory/lib/message"
 	"github.com/dtrugman/qory/lib/session"
 	"github.com/google/uuid"
@@ -239,8 +238,8 @@ func (q *Qory) ConfigUnsetEditor() error {
 	return q.configUnset(config.Editor)
 }
 
-// getEditor resolves the editor to use: config → $VISUAL → $EDITOR → defaultEditor.
-func (q *Qory) getEditor() (string, error) {
+// GetEditor resolves the editor to use: config → $VISUAL → $EDITOR → defaultEditor.
+func (q *Qory) GetEditor() (string, error) {
 	v, err := q.conf.Get(config.Editor)
 	if err != nil {
 		return "", fmt.Errorf("get editor failed: %w", err)
@@ -251,30 +250,10 @@ func (q *Qory) getEditor() (string, error) {
 	if visual := os.Getenv("VISUAL"); visual != "" {
 		return visual, nil
 	}
-	if editor := os.Getenv("EDITOR"); editor != "" {
-		return editor, nil
+	if ed := os.Getenv("EDITOR"); ed != "" {
+		return ed, nil
 	}
 	return defaultEditor, nil
-}
-
-// openEditor opens the configured editor on a secure temp file and returns the
-// file content. Returns ("", nil) if the user saved an empty file.
-func (q *Qory) openEditor() (string, error) {
-	editorName, err := q.getEditor()
-	if err != nil {
-		return "", err
-	}
-
-	bytes, err := editor.Open(editorName)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.TrimSpace(string(bytes)) == "" {
-		return "", nil
-	}
-
-	return string(bytes), nil
 }
 
 // QueryDefault runs a query using the configured default mode (new or last).

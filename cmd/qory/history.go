@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dtrugman/qory/cmd/qory/biz"
 	"github.com/spf13/cobra"
 )
 
-func newHistoryCmd(q *Qory) *cobra.Command {
+func newHistoryCmd(q *biz.Qory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "history [session-id]",
 		Short: "Show chat history",
