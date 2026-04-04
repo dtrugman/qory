@@ -28,17 +28,41 @@ qory "This is my project dir" "$(ls)" "How should I improve it?"
 
 Keep refining and chatting with the model to improve results.
 
-Follow up on last query:
+By default, each `qory` invocation starts a **new session**. You can change this behaviour with the `--last`, `--new`, and `--session` flags, or configure a persistent default with `qory config mode`.
+
+### Continue the last session
 
 ```bash
-qory ^ "With that project structure, where should I put my integration tests?"
+qory --last "With that project structure, where should I put my integration tests?"
 ```
 
-Use smart sessions:
+### Resume a specific session by ID
+
+Use `qory history` to find session IDs, then pass one to `--session`:
 
 ```bash
-qory -s gosort "Please implement a method to find all files in a dir and sort them"
+qory history
+qory --session <id> "Can you revise that last function?"
 ```
+
+### Force a new session
+
+```bash
+qory --new "Start from scratch"
+```
+
+### Set a default mode
+
+Instead of passing `--last` or `--new` every time, configure a default:
+
+```bash
+qory config mode set   # choose "new" or "last"
+```
+
+- `new` — start a fresh session each time (default)
+- `last` — automatically continue the most recent session
+
+Individual `--new` and `--last` flags always override the configured mode.
 
 ## 🌟 Install
 
@@ -70,19 +94,19 @@ For a quick download and install, choose your preferred method:
 - **curl**:
 
   ```bash
-  curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.3.0/qory_0.3.0_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
   ```
 
 - **wget**:
 
   ```bash
-  wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
+  wget -O ./qory https://github.com/dtrugman/qory/releases/download/v0.3.0/qory_0.3.0_darwin_arm64 && chmod +x ./qory && sudo mv ./qory /usr/local/bin/.
   ```
 
 Advanced users can install in **any other dir in your PATH**:
 
 ```bash
-curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.2.2/qory_0.2.2_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
+curl -L -o ./qory https://github.com/dtrugman/qory/releases/download/v0.3.0/qory_0.3.0_darwin_arm64 && chmod +x ./qory && mv ./qory ~/.local/bin/.
 ```
 
 ⚙️ Remember to configure before first use by visiting the [Configuration](#configuration) section.
@@ -94,54 +118,73 @@ Run your first qory: `qory hi`
 Run:
 
 ```bash
-qory --version
+qory version
 ```
 
 Ensure it runs successfully.
 
 ## ⚙️ Configuration
 
-Before using Qory, set up your API key and preferred model.
+Before using Qory for the first time, you should set up your provider's Base URL and API key.
+Qory uses OpenAI's Chat Completions SDK, and as such OpenAI models work out of the box.
+If you want access to all the models out there, we strongly recommend using [Requesty](https://requesty.ai).
 
-Save once. Configuration is stored in `~/.qory` on MacOS/Linux or `%APPDATA%` on Windows.
-
-### 📌 Model Selection
-
-Run:
-
-```bash
-qory --config model set
-```
-
-Use any OpenAI model, including: `gpt-4o`, `gpt-4o-mini`, `gpt-o1`, ...
-
-Check available models [here](https://platform.openai.com/docs/models).
+Note: Configuration is stored in `~/.config/qory` on MacOS/Linux or `%APPDATA%` on Windows.
 
 ### 🔑 API Key Setup
 
 Run:
 
 ```bash
-qory --config api-key set
+qory config api-key set
 ```
-
-#### Alternatives to Set API Key
 
 ### 🔄 Base URL
 
 Defaults to OpenAI API. Change it by:
 
 1. Setting `OPENAI_BASE_URL`.
-2. Using `qory --config base-url set`.
+2. Using `qory config base-url set`.
+
+### 📌 Model Selection
+
+You can explicitly specify any specific model you want:
+
+```bash
+qory config model set gpt-5.4
+```
+
+Alternatively, running without a value will fetch all models from the `/v1/models/` endpoint,
+and suggest an interactive menu to chosoe from.
 
 ### 📌 Persistent Prompt
 
-Create a custom system prompt to always accompany your qory commands:
+Configure a custom system prompt to use with your Qory sessions:
 
 ```bash
-qory --config prompt set
+qory config prompt set
 ```
 
-Example prompt: "do not explain, just provide the essence of the request" 💡
+Example prompt: "do not explain, just provide a concise response"
+
+### ✏️ Editor
+
+When qory is run without any input, it opens an editor so you can type your query:
+
+```bash
+qory
+```
+
+The editor is resolved in this order:
+1. `qory config editor set` (stored config value)
+2. `$VISUAL` environment variable
+3. `$EDITOR` environment variable
+4. `vi` (built-in default)
+
+To change the default editor:
+
+```bash
+qory config editor set
+```
 
 🔗 For further assistance and updates, visit [Qory on GitHub](https://github.com/dtrugman/qory).
