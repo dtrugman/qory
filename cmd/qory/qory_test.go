@@ -90,7 +90,7 @@ func (m *MockSessionManager) Cleanup(limit int) error {
 // ---- QueryNew tests ----
 
 func Test_QueryNew_DoesNotLoadHistory(t *testing.T) {
-	userText := "hello\n"
+	userText := "hello"
 	assistantText := "response"
 
 	conf := &MockConfig{}
@@ -111,7 +111,7 @@ func Test_QueryNew_DoesNotLoadHistory(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryNew([]string{"hello"})
+	err := q.QueryNew([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -120,8 +120,8 @@ func Test_QueryNew_DoesNotLoadHistory(t *testing.T) {
 }
 
 func Test_QueryNew_UsesUniqueSessionIDs(t *testing.T) {
-	firstUserText := "first\n"
-	secondUserText := "second\n"
+	firstUserText := "first"
+	secondUserText := "second"
 	assistantText := "response"
 
 	conf := &MockConfig{}
@@ -158,9 +158,9 @@ func Test_QueryNew_UsesUniqueSessionIDs(t *testing.T) {
 		Run(captureID).Return(nil).Once()
 
 	q := NewQory(conf, client, sm)
-	err1 := q.QueryNew([]string{"first"})
+	err1 := q.QueryNew([]string{firstUserText})
 	require.NoError(t, err1)
-	err2 := q.QueryNew([]string{"second"})
+	err2 := q.QueryNew([]string{secondUserText})
 	require.NoError(t, err2)
 
 	require.Len(t, storedIDs, 2)
@@ -173,7 +173,7 @@ func Test_QueryNew_UsesUniqueSessionIDs(t *testing.T) {
 
 func Test_QueryNew_AddsSystemPrompt(t *testing.T) {
 	systemText := "Be concise."
-	userText := "hello\n"
+	userText := "hello"
 	assistantText := "response"
 
 	conf := &MockConfig{}
@@ -196,7 +196,7 @@ func Test_QueryNew_AddsSystemPrompt(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryNew([]string{"hello"})
+	err := q.QueryNew([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -228,9 +228,9 @@ func Test_QueryNew_ReturnsErrorOnQueryFailure(t *testing.T) {
 // ---- QuerySession tests ----
 
 func Test_QuerySession_LoadsExistingHistory(t *testing.T) {
-	prevUserText := "previous question\n"
+	prevUserText := "previous question"
 	prevAssistantText := "previous answer"
-	userText := "follow up\n"
+	userText := "follow up"
 	assistantText := "new response"
 
 	existing := session.NewSession()
@@ -259,7 +259,7 @@ func Test_QuerySession_LoadsExistingHistory(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QuerySession("my-session", []string{"follow up"})
+	err := q.QuerySession("my-session", []string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -285,9 +285,9 @@ func Test_QuerySession_FailsWhenNotFound(t *testing.T) {
 
 func Test_QuerySession_SkipsSystemPrompt(t *testing.T) {
 	systemText := "Be concise."
-	prevUserText := "previous\n"
+	prevUserText := "previous"
 	prevAssistantText := "previous answer"
-	userText := "follow up\n"
+	userText := "follow up"
 	assistantText := "response"
 
 	existing := session.NewSession()
@@ -319,7 +319,7 @@ func Test_QuerySession_SkipsSystemPrompt(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QuerySession("my-session", []string{"follow up"})
+	err := q.QuerySession("my-session", []string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -330,9 +330,9 @@ func Test_QuerySession_SkipsSystemPrompt(t *testing.T) {
 // ---- QueryLast tests ----
 
 func Test_QueryLast_ResolvesLastSessionID(t *testing.T) {
-	prevUserText := "previous\n"
+	prevUserText := "previous"
 	prevAssistantText := "answer"
-	userText := "follow up\n"
+	userText := "follow up"
 	assistantText := "response"
 
 	existing := session.NewSession()
@@ -362,7 +362,7 @@ func Test_QueryLast_ResolvesLastSessionID(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryLast([]string{"follow up"})
+	err := q.QueryLast([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -372,9 +372,9 @@ func Test_QueryLast_ResolvesLastSessionID(t *testing.T) {
 
 func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 	systemText := "Be concise."
-	prevUserText := "previous\n"
+	prevUserText := "previous"
 	prevAssistantText := "previous answer"
-	userText := "follow up\n"
+	userText := "follow up"
 	assistantText := "response"
 
 	existing := session.NewSession()
@@ -407,7 +407,7 @@ func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryLast([]string{"follow up"})
+	err := q.QueryLast([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -418,7 +418,7 @@ func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 // ---- QueryDefault tests ----
 
 func Test_QueryDefault_NoConfig(t *testing.T) {
-	userText := "hello\n"
+	userText := "hello"
 	assistantText := "response"
 
 	conf := &MockConfig{}
@@ -440,7 +440,7 @@ func Test_QueryDefault_NoConfig(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryDefault([]string{"hello"})
+	err := q.QueryDefault([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -449,7 +449,7 @@ func Test_QueryDefault_NoConfig(t *testing.T) {
 }
 
 func Test_QueryDefault_ModeNew(t *testing.T) {
-	userText := "hello\n"
+	userText := "hello"
 	assistantText := "response"
 
 	conf := &MockConfig{}
@@ -471,7 +471,7 @@ func Test_QueryDefault_ModeNew(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryDefault([]string{"hello"})
+	err := q.QueryDefault([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)
@@ -480,9 +480,9 @@ func Test_QueryDefault_ModeNew(t *testing.T) {
 }
 
 func Test_QueryDefault_ModeLast(t *testing.T) {
-	prevUserText := "previous\n"
+	prevUserText := "previous"
 	prevAssistantText := "answer"
-	userText := "follow up\n"
+	userText := "follow up"
 	assistantText := "response"
 
 	existing := session.NewSession()
@@ -513,7 +513,7 @@ func Test_QueryDefault_ModeLast(t *testing.T) {
 	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
 
 	q := NewQory(conf, client, sm)
-	err := q.QueryDefault([]string{"follow up"})
+	err := q.QueryDefault([]string{userText})
 	require.NoError(t, err)
 
 	sm.AssertExpectations(t)

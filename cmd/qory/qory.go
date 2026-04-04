@@ -59,23 +59,6 @@ func NewQory(conf Config, client Client, sm SessionManager) *Qory {
 	return &Qory{conf: conf, client: client, sm: sm}
 }
 
-// buildUserPrompt converts a list of CLI inputs into a single prompt string.
-// Each element is treated as a file path first; if the file cannot be read it
-// is included verbatim as text.
-func buildUserPrompt(inputs []string) string {
-	var b strings.Builder
-	for _, arg := range inputs {
-		bytes, err := os.ReadFile(arg)
-		if err == nil {
-			b.Write(bytes)
-		} else {
-			b.WriteString(arg)
-		}
-		b.WriteString("\n")
-	}
-	return b.String()
-}
-
 // runQueryInner is the shared query execution path. It appends the user prompt
 // to sess, queries the model, and persists the updated session under sessionID.
 func (q *Qory) runQueryInner(sessionID string, sess session.Session, inputs []string) error {
