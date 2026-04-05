@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/dtrugman/qory/lib/config"
@@ -15,8 +16,8 @@ import (
 const (
 	appName = "Qory"
 
-	historyLength       = 10
-	sessionUnnamedLimit = 10
+	historyLength      = 10
+	defaultHistorySize = 50
 
 	defaultEditor = "vi"
 )
@@ -62,7 +63,7 @@ func NewQory(conf Config, client Client, sm SessionManager) *Qory {
 // runQueryInner is the shared query execution path. It appends the user prompt
 // to sess, queries the model, and persists the updated session under sessionID.
 func (q *Qory) runQueryInner(sessionID string, sess session.Session, inputs []string) error {
-	modelName, err := q.conf.Get(config.Model)
+	modelName, err := q.configGet(config.Model)
 	if err != nil {
 		return fmt.Errorf("get model failed: %w", err)
 	}
@@ -71,7 +72,7 @@ func (q *Qory) runQueryInner(sessionID string, sess session.Session, inputs []st
 	}
 
 	if len(sess.Messages) == 0 {
-		systemPrompt, err := q.conf.Get(config.Prompt)
+		systemPrompt, err := q.configGet(config.Prompt)
 		if err != nil {
 			return fmt.Errorf("get system prompt failed: %w", err)
 		}
@@ -94,7 +95,10 @@ func (q *Qory) runQueryInner(sessionID string, sess session.Session, inputs []st
 	if err = q.sm.Store(sessionID, sess); err != nil {
 		errs = append(errs, fmt.Errorf("store session: %w", err))
 	}
-	if err = q.sm.Cleanup(sessionUnnamedLimit); err != nil {
+	historySize, err := q.getHistorySize()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("get history size: %w", err))
+	} else if err = q.sm.Cleanup(historySize); err != nil {
 		errs = append(errs, fmt.Errorf("cleanup sessions: %w", err))
 	}
 	return errors.Join(errs...)
@@ -186,7 +190,7 @@ func (q *Qory) ConfigSetBaseURL(value string) error {
 	if !strings.HasSuffix(value, "/") {
 		value = value + "/"
 	}
-	return q.conf.Set(config.BaseURL, value)
+	return q.configSet(config.BaseURL, value)
 }
 
 func (q *Qory) ConfigUnsetBaseURL() error {
@@ -222,9 +226,14 @@ func (q *Qory) ConfigGetMode() (*string, error) {
 }
 
 func (q *Qory) ConfigSetMode(value string) error {
-	if value != config.ModeNew && value != config.ModeLast {
-		return fmt.Errorf("invalid mode %q: must be %q or %q", value, config.ModeNew, config.ModeLast)
+	switch value {
+	case config.ModeNew, config.ModeLast:
+		// Valid
+
+	default:
+		return fmt.Errorf("invalid mode %q", value)
 	}
+
 	return q.configSet(config.Mode, value)
 }
 
@@ -244,9 +253,50 @@ func (q *Qory) ConfigUnsetEditor() error {
 	return q.configUnset(config.Editor)
 }
 
+func (q *Qory) ConfigGetHistorySizeDefault() int {
+	return defaultHistorySize
+}
+
+func (q *Qory) ConfigGetHistorySize() (*string, error) {
+	return q.configGet(config.HistorySize)
+}
+
+func (q *Qory) ConfigSetHistorySize(value string) error {
+	size, err := strconv.Atoi(value)
+	if err != nil || size <= 0 {
+		return fmt.Errorf("invalid history size %q: must be a positive integer", value)
+	}
+
+	return q.configSet(config.HistorySize, value)
+}
+
+func (q *Qory) ConfigUnsetHistorySize() error {
+	return q.configUnset(config.HistorySize)
+}
+
+// getHistorySize returns the configured number of unnamed sessions to retain,
+// falling back to sessionUnnamedLimit if no value is set.
+func (q *Qory) getHistorySize() (int, error) {
+	v, err := q.configGet(config.HistorySize)
+	if err != nil {
+		return 0, fmt.Errorf("get history size failed: %w", err)
+	}
+
+	if v == nil {
+		return defaultHistorySize, nil
+	}
+
+	size, err := strconv.Atoi(*v)
+	if err != nil {
+		return 0, fmt.Errorf("invalid history size %q: %w", *v, err)
+	}
+
+	return size, nil
+}
+
 // GetEditor resolves the editor to use: config → $VISUAL → $EDITOR → defaultEditor.
 func (q *Qory) GetEditor() (string, error) {
-	v, err := q.conf.Get(config.Editor)
+	v, err := q.configGet(config.Editor)
 	if err != nil {
 		return "", fmt.Errorf("get editor failed: %w", err)
 	}
@@ -265,7 +315,7 @@ func (q *Qory) GetEditor() (string, error) {
 // QueryDefault runs a query using the configured default mode (new or last).
 // If no mode is configured, it starts a new session.
 func (q *Qory) QueryDefault(inputs []string) error {
-	mode, err := q.conf.Get(config.Mode)
+	mode, err := q.configGet(config.Mode)
 	if err != nil {
 		return fmt.Errorf("get mode failed: %w", err)
 	}

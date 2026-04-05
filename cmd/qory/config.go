@@ -67,6 +67,19 @@ The editor is resolved in the following order:
 		promptUserInput,
 	)
 
+	short := fmt.Sprintf("Number of unnamed sessions to keep (default %d)", q.ConfigGetHistorySizeDefault())
+
+	cmdHistorySize := newConfigKeyCmd("history-size",
+		short,
+		`Controls how many unnamed (auto-generated) sessions are retained on disk.
+
+When a new query is completed, sessions beyond this limit are deleted oldest-first.
+If the limit is smaller than the current number of stored sessions, no immediate
+cleanup occurs — the excess sessions are removed the next time a new query is run.`,
+		q.ConfigGetHistorySize, q.ConfigSetHistorySize, q.ConfigUnsetHistorySize,
+		promptUserInput,
+	)
+
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Manage configuration",
@@ -78,6 +91,7 @@ The editor is resolved in the following order:
 		cmdModel,
 		cmdMode,
 		cmdEditor,
+		cmdHistorySize,
 	)
 
 	return cmd

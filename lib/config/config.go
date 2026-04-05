@@ -9,12 +9,13 @@ const (
 )
 
 const ( // Public configuration values
-	APIKey  = "api_key"
-	BaseURL = "base_url"
-	Model   = "model"
-	Prompt  = "prompt"
-	Mode    = "mode"
-	Editor  = "editor"
+	APIKey      = "api_key"
+	BaseURL     = "base_url"
+	Model       = "model"
+	Prompt      = "prompt"
+	Mode        = "mode"
+	Editor      = "editor"
+	HistorySize = "history_size"
 )
 
 const ( // Valid values for Mode

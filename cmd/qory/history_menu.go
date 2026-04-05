@@ -16,7 +16,6 @@ type historyProvider interface {
 	HistoryDelete(id string) error
 }
 
-
 const (
 	dateFormat = "Jan 02 2006 15:04"
 
