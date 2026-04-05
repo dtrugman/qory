@@ -23,7 +23,7 @@ func newHistoryCmd(q *biz.Qory) *cobra.Command {
 				return nil
 			}
 
-			editorName, err := q.GetEditor()
+			editorName, _, err := q.GetConfig().Editor()
 			if err != nil {
 				return err
 			}

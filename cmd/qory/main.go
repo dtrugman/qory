@@ -12,14 +12,24 @@ import (
 )
 
 func buildClient(conf biz.Config) (*model.Client, error) {
-	apiKey, err := conf.Get(config.APIKey)
+	apiKeyStr, _, err := conf.APIKey()
 	if err != nil {
 		return nil, fmt.Errorf("get API key failed: %w", err)
 	}
 
-	baseURL, err := conf.Get(config.BaseURL)
+	baseURLStr, _, err := conf.BaseURL()
 	if err != nil {
 		return nil, fmt.Errorf("get base URL failed: %w", err)
+	}
+
+	var apiKey *string
+	if apiKeyStr != "" {
+		apiKey = &apiKeyStr
+	}
+
+	var baseURL *string
+	if baseURLStr != "" {
+		baseURL = &baseURLStr
 	}
 
 	client := model.NewClient(apiKey, baseURL)

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dtrugman/qory/lib/config"
 	"github.com/dtrugman/qory/lib/message"
 	"github.com/dtrugman/qory/lib/session"
-	"github.com/dtrugman/qory/lib/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -24,20 +24,95 @@ func (m *MockConfig) GetConfigSubdir(name string) (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *MockConfig) Get(key string) (*string, error) {
-	args := m.Called(key)
-	val, _ := args.Get(0).(*string)
-	return val, args.Error(1)
+func (m *MockConfig) Editor() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
 }
 
-func (m *MockConfig) Set(key string, value string) error {
-	args := m.Called(key, value)
-	return args.Error(0)
+func (m *MockConfig) SetEditor(value string) error {
+	return m.Called(value).Error(0)
 }
 
-func (m *MockConfig) Unset(key string) error {
-	args := m.Called(key)
-	return args.Error(0)
+func (m *MockConfig) UnsetEditor() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) HistorySize() (int, config.Origin, error) {
+	args := m.Called()
+	return args.Int(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetHistorySize(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetHistorySize() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) Mode() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetMode(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetMode() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) APIKey() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetAPIKey(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetAPIKey() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) BaseURL() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetBaseURL(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetBaseURL() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) Model() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetModel(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetModel() error {
+	return m.Called().Error(0)
+}
+
+func (m *MockConfig) Prompt() (string, config.Origin, error) {
+	args := m.Called()
+	return args.String(0), args.Get(1).(config.Origin), args.Error(2)
+}
+
+func (m *MockConfig) SetPrompt(value string) error {
+	return m.Called(value).Error(0)
+}
+
+func (m *MockConfig) UnsetPrompt() error {
+	return m.Called().Error(0)
 }
 
 // ---- mock client ----
@@ -102,8 +177,9 @@ func Test_QueryNew_DoesNotLoadHistory(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return((*string)(nil), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return("", config.OriginNotSet, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewUserMessage(userText),
@@ -113,7 +189,7 @@ func Test_QueryNew_DoesNotLoadHistory(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryNew([]string{userText})
@@ -133,8 +209,9 @@ func Test_QueryNew_UsesUniqueSessionIDs(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return((*string)(nil), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return("", config.OriginNotSet, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewUserMessage(firstUserText),
@@ -142,7 +219,7 @@ func Test_QueryNew_UsesUniqueSessionIDs(t *testing.T) {
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewUserMessage(secondUserText),
 	}).Return(assistantText, nil).Once()
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	firstExpected := session.NewSession()
 	firstExpected.AddMessage(message.NewUserMessage(firstUserText))
@@ -185,8 +262,9 @@ func Test_QueryNew_AddsSystemPrompt(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return(util.Ptr(systemText), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return(systemText, config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewSystemMessage(systemText),
@@ -198,7 +276,7 @@ func Test_QueryNew_AddsSystemPrompt(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryNew([]string{userText})
@@ -216,8 +294,8 @@ func Test_QueryNew_ReturnsErrorOnQueryFailure(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return((*string)(nil), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return("", config.OriginNotSet, nil)
 
 	client.On("Query", "gpt-4o", mock.Anything).Return("", queryErr)
 
@@ -246,7 +324,8 @@ func Test_QuerySession_LoadsExistingHistory(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 	sm.On("Load", "my-session").Return(existing, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
@@ -261,7 +340,7 @@ func Test_QuerySession_LoadsExistingHistory(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", "my-session", expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QuerySession("my-session", []string{userText})
@@ -304,7 +383,8 @@ func Test_QuerySession_SkipsSystemPrompt(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 	sm.On("Load", "my-session").Return(existing, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
@@ -321,7 +401,7 @@ func Test_QuerySession_SkipsSystemPrompt(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", "my-session", expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QuerySession("my-session", []string{userText})
@@ -348,7 +428,8 @@ func Test_QueryLast_ResolvesLastSessionID(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 	sm.On("Last").Return("last-session", nil)
 	sm.On("Load", "last-session").Return(existing, nil)
 
@@ -364,7 +445,7 @@ func Test_QueryLast_ResolvesLastSessionID(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", "last-session", expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryLast([]string{userText})
@@ -391,7 +472,8 @@ func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 	sm.On("Last").Return("last-session", nil)
 	sm.On("Load", "last-session").Return(existing, nil)
 
@@ -409,7 +491,7 @@ func Test_QueryLast_SkipsSystemPrompt(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", "last-session", expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryLast([]string{userText})
@@ -430,9 +512,10 @@ func Test_QueryDefault_NoConfig(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "mode").Return((*string)(nil), nil)
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return((*string)(nil), nil)
+	conf.On("Mode").Return("", config.OriginNotSet, nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return("", config.OriginNotSet, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewUserMessage(userText),
@@ -442,7 +525,7 @@ func Test_QueryDefault_NoConfig(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryDefault([]string{userText})
@@ -461,9 +544,10 @@ func Test_QueryDefault_ModeNew(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "mode").Return(util.Ptr("new"), nil)
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
-	conf.On("Get", "prompt").Return((*string)(nil), nil)
+	conf.On("Mode").Return("new", config.OriginUser, nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("Prompt").Return("", config.OriginNotSet, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 
 	client.On("Query", "gpt-4o", []message.Message{
 		message.NewUserMessage(userText),
@@ -473,7 +557,7 @@ func Test_QueryDefault_ModeNew(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", mock.AnythingOfType("string"), expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryDefault([]string{userText})
@@ -498,8 +582,9 @@ func Test_QueryDefault_ModeLast(t *testing.T) {
 	client := &MockClient{}
 	sm := &MockSessionManager{}
 
-	conf.On("Get", "mode").Return(util.Ptr("last"), nil)
-	conf.On("Get", "model").Return(util.Ptr("gpt-4o"), nil)
+	conf.On("Mode").Return("last", config.OriginUser, nil)
+	conf.On("Model").Return("gpt-4o", config.OriginUser, nil)
+	conf.On("HistorySize").Return(config.DefaultHistorySize, config.OriginDefault, nil)
 	sm.On("Last").Return("last-session", nil)
 	sm.On("Load", "last-session").Return(existing, nil)
 
@@ -515,7 +600,7 @@ func Test_QueryDefault_ModeLast(t *testing.T) {
 	expectedSession.AddMessage(message.NewUserMessage(userText))
 	expectedSession.AddMessage(message.NewAssistantMessage(assistantText))
 	sm.On("Store", "last-session", expectedSession).Return(nil)
-	sm.On("Cleanup", sessionUnnamedLimit).Return(nil)
+	sm.On("Cleanup", config.DefaultHistorySize).Return(nil)
 
 	q := NewQory(conf, client, sm)
 	err := q.QueryDefault([]string{userText})
@@ -536,7 +621,7 @@ func Test_History_AllCallsEnum(t *testing.T) {
 	previews := []session.SessionPreview{
 		{Name: "test-session", UpdatedAt: time.Now(), Snippet: "test snippet"},
 	}
-	sm.On("Enum", historyLength).Return(previews, nil)
+	sm.On("Enum", 0).Return(previews, nil)
 
 	q := NewQory(conf, client, sm)
 	result, err := q.HistoryAll()
@@ -616,188 +701,6 @@ func Test_History_SessionNotFoundReturnsError(t *testing.T) {
 	sm.AssertExpectations(t)
 	conf.AssertExpectations(t)
 	client.AssertExpectations(t)
-}
-
-// ---- Config tests ----
-
-func Test_Config_GetRoutesCorrectKey(t *testing.T) {
-	cases := []struct {
-		name        string
-		fn          func(*Qory) (*string, error)
-		expectedKey string
-	}{
-		{"api-key", (*Qory).ConfigGetAPIKey, "api_key"},
-		{"base-url", (*Qory).ConfigGetBaseURL, "base_url"},
-		{"model", (*Qory).ConfigGetModel, "model"},
-		{"prompt", (*Qory).ConfigGetPrompt, "prompt"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			expected := util.Ptr("test-value")
-			conf := &MockConfig{}
-			conf.On("Get", tc.expectedKey).Return(expected, nil)
-
-			q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-			result, err := tc.fn(q)
-			require.NoError(t, err)
-			assert.Equal(t, expected, result)
-
-			conf.AssertExpectations(t)
-		})
-	}
-}
-
-func Test_Config_UnsetRoutesCorrectKey(t *testing.T) {
-	cases := []struct {
-		name        string
-		fn          func(*Qory) error
-		expectedKey string
-	}{
-		{"api-key", (*Qory).ConfigUnsetAPIKey, "api_key"},
-		{"base-url", (*Qory).ConfigUnsetBaseURL, "base_url"},
-		{"model", (*Qory).ConfigUnsetModel, "model"},
-		{"prompt", (*Qory).ConfigUnsetPrompt, "prompt"},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			conf := &MockConfig{}
-			conf.On("Unset", tc.expectedKey).Return(nil)
-
-			q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-			err := tc.fn(q)
-			require.NoError(t, err)
-
-			conf.AssertExpectations(t)
-		})
-	}
-}
-
-func Test_Config_SetRoutesCorrectKey(t *testing.T) {
-	cases := []struct {
-		name        string
-		fn          func(*Qory, string) error
-		expectedKey string
-		value       string
-	}{
-		{"api-key", (*Qory).ConfigSetAPIKey, "api_key", "sk-test-key"},
-		{"base-url", (*Qory).ConfigSetBaseURL, "base_url", "https://api.example.com/"},
-		{"model", (*Qory).ConfigSetModel, "model", "gpt-4o"},
-		{"prompt", (*Qory).ConfigSetPrompt, "prompt", "Be concise."},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			conf := &MockConfig{}
-			conf.On("Set", tc.expectedKey, tc.value).Return(nil)
-
-			q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-			err := tc.fn(q, tc.value)
-			require.NoError(t, err)
-
-			conf.AssertExpectations(t)
-		})
-	}
-}
-
-func Test_Config_SetBaseURLNormalizesTrailingSlash(t *testing.T) {
-	conf := &MockConfig{}
-	conf.On("Set", "base_url", "https://api.example.com/").Return(nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	err := q.ConfigSetBaseURL("https://api.example.com")
-	require.NoError(t, err)
-
-	conf.AssertExpectations(t)
-}
-
-func Test_Config_GetRoutesCorrectKey_Mode(t *testing.T) {
-	expected := util.Ptr("new")
-	conf := &MockConfig{}
-	conf.On("Get", "mode").Return(expected, nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	result, err := q.ConfigGetMode()
-	require.NoError(t, err)
-	assert.Equal(t, expected, result)
-
-	conf.AssertExpectations(t)
-}
-
-func Test_Config_UnsetRoutesCorrectKey_Mode(t *testing.T) {
-	conf := &MockConfig{}
-	conf.On("Unset", "mode").Return(nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	err := q.ConfigUnsetMode()
-	require.NoError(t, err)
-
-	conf.AssertExpectations(t)
-}
-
-func Test_Config_SetMode_AcceptsValidValues(t *testing.T) {
-	for _, value := range []string{"new", "last"} {
-		t.Run(value, func(t *testing.T) {
-			conf := &MockConfig{}
-			conf.On("Set", "mode", value).Return(nil)
-
-			q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-			err := q.ConfigSetMode(value)
-			require.NoError(t, err)
-
-			conf.AssertExpectations(t)
-		})
-	}
-}
-
-func Test_Config_SetMode_RejectsInvalidValue(t *testing.T) {
-	conf := &MockConfig{}
-	client := &MockClient{}
-	sm := &MockSessionManager{}
-
-	q := NewQory(conf, client, sm)
-	err := q.ConfigSetMode("invalid")
-	require.Error(t, err)
-
-	conf.AssertExpectations(t)
-	client.AssertExpectations(t)
-	sm.AssertExpectations(t)
-}
-
-func Test_Config_GetRoutesCorrectKey_Editor(t *testing.T) {
-	expected := util.Ptr("nvim")
-	conf := &MockConfig{}
-	conf.On("Get", "editor").Return(expected, nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	result, err := q.ConfigGetEditor()
-	require.NoError(t, err)
-	assert.Equal(t, expected, result)
-
-	conf.AssertExpectations(t)
-}
-
-func Test_Config_UnsetRoutesCorrectKey_Editor(t *testing.T) {
-	conf := &MockConfig{}
-	conf.On("Unset", "editor").Return(nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	err := q.ConfigUnsetEditor()
-	require.NoError(t, err)
-
-	conf.AssertExpectations(t)
-}
-
-func Test_Config_SetRoutesCorrectKey_Editor(t *testing.T) {
-	conf := &MockConfig{}
-	conf.On("Set", "editor", "nvim").Return(nil)
-
-	q := NewQory(conf, &MockClient{}, &MockSessionManager{})
-	err := q.ConfigSetEditor("nvim")
-	require.NoError(t, err)
-
-	conf.AssertExpectations(t)
 }
 
 // ---- QueryLast error tests ----

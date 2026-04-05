@@ -11,13 +11,16 @@ import (
 )
 
 type historyProvider interface {
-	HistoryAll() ([]session.SessionPreview, error)
+	HistoryAll(limit int) ([]session.SessionPreview, error)
 	HistorySession(id string) (session.Session, error)
 	HistoryDelete(id string) error
 }
 
 const (
 	dateFormat = "Jan 02 2006 15:04"
+
+	// historyLength is the maximum number of sessions loaded into the browser.
+	historyLength = 10
 
 	// Fixed lines of overhead: 1 header + up to 3 nav lines + 2 separators + 1 help line.
 	viewOverheadLines = 7
@@ -73,7 +76,7 @@ type sessionModel struct {
 }
 
 func newSessionModel(provider historyProvider) (sessionModel, error) {
-	previews, err := provider.HistoryAll()
+	previews, err := provider.HistoryAll(historyLength)
 	if err != nil {
 		return sessionModel{}, err
 	}

@@ -16,8 +16,8 @@ func newCachingProvider(inner historyProvider) *cachingProvider {
 	}
 }
 
-func (c *cachingProvider) HistoryAll() ([]session.SessionPreview, error) {
-	return c.inner.HistoryAll()
+func (c *cachingProvider) HistoryAll(limit int) ([]session.SessionPreview, error) {
+	return c.inner.HistoryAll(limit)
 }
 
 func (c *cachingProvider) HistorySession(id string) (session.Session, error) {

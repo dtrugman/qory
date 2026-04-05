@@ -27,7 +27,7 @@ Examples:
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				editorName, err := q.GetEditor()
+				editorName, _, err := q.GetConfig().Editor()
 				if err != nil {
 					return err
 				}

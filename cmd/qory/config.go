@@ -4,26 +4,28 @@ import (
 	"fmt"
 
 	"github.com/dtrugman/qory/cmd/qory/biz"
+	"github.com/dtrugman/qory/lib/config"
 	"github.com/spf13/cobra"
 )
 
 func newConfigCmd(q *biz.Qory) *cobra.Command {
-	const noLong = ""
+	conf := q.GetConfig()
 
 	cmdAPIKey := newConfigKeyCmd("api-key",
-		"API key for the model provider", noLong,
-		q.ConfigGetAPIKey, q.ConfigSetAPIKey, q.ConfigUnsetAPIKey,
+		"API key for the model provider", "",
+		conf.APIKey, conf.SetAPIKey, conf.UnsetAPIKey,
 		promptUserInput,
 	)
 
 	cmdBaseURL := newConfigKeyCmd("base-url",
-		"Base URL for the model provider", noLong,
-		q.ConfigGetBaseURL, q.ConfigSetBaseURL, q.ConfigUnsetBaseURL, promptUserInput,
+		"Base URL for the model provider", "",
+		conf.BaseURL, conf.SetBaseURL, conf.UnsetBaseURL,
+		promptUserInput,
 	)
 
 	cmdModel := newConfigKeyCmd("model",
-		"Model to use for queries", noLong,
-		q.ConfigGetModel, q.ConfigSetModel, q.ConfigUnsetModel,
+		"Model to use for queries", "",
+		conf.Model, conf.SetModel, conf.UnsetModel,
 		func() (string, error) {
 			models, err := q.AvailableModels()
 			if err != nil {
@@ -34,8 +36,8 @@ func newConfigCmd(q *biz.Qory) *cobra.Command {
 	)
 
 	cmdPrompt := newConfigKeyCmd("prompt",
-		"Persistent system prompt prepended to every new session", noLong,
-		q.ConfigGetPrompt, q.ConfigSetPrompt, q.ConfigUnsetPrompt,
+		"Persistent system prompt prepended to every new session", "",
+		conf.Prompt, conf.SetPrompt, conf.UnsetPrompt,
 		promptUserInput,
 	)
 
@@ -48,7 +50,7 @@ func newConfigCmd(q *biz.Qory) *cobra.Command {
   last  Automatically continue the most recent session
 
 Use --new or --last on individual queries to override the configured mode.`,
-		q.ConfigGetMode, q.ConfigSetMode, q.ConfigUnsetMode,
+		conf.Mode, conf.SetMode, conf.UnsetMode,
 		func() (string, error) {
 			return promptFromList([]string{"new", "last"})
 		},
@@ -59,24 +61,31 @@ Use --new or --last on individual queries to override the configured mode.`,
 		`Controls which editor is opened when qory is run without any input arguments.
 
 The editor is resolved in the following order:
-  1. This config value (if set)
-  2. The $VISUAL environment variable
-  3. The $EDITOR environment variable
+  1. The $VISUAL environment variable
+  2. The $EDITOR environment variable
+  3. This config value (if set)
   4. "vi" (built-in default)`,
-		q.ConfigGetEditor, q.ConfigSetEditor, q.ConfigUnsetEditor,
+		conf.Editor, conf.SetEditor, conf.UnsetEditor,
 		promptUserInput,
 	)
 
-	short := fmt.Sprintf("Number of unnamed sessions to keep (default %d)", q.ConfigGetHistorySizeDefault())
+	getHistorySizeStr := func() (string, config.Origin, error) {
+		size, origin, err := conf.HistorySize()
+		if err != nil {
+			return "", origin, err
+		}
+		return fmt.Sprintf("%d", size), origin, nil
+	}
 
-	cmdHistorySize := newConfigKeyCmd("history-size",
-		short,
+	cmdHistorySize := newConfigKeyCmd(
+		"history-size",
+		fmt.Sprintf("Number of unnamed sessions to keep (default %d)", config.DefaultHistorySize),
 		`Controls how many unnamed (auto-generated) sessions are retained on disk.
 
 When a new query is completed, sessions beyond this limit are deleted oldest-first.
 If the limit is smaller than the current number of stored sessions, no immediate
 cleanup occurs — the excess sessions are removed the next time a new query is run.`,
-		q.ConfigGetHistorySize, q.ConfigSetHistorySize, q.ConfigUnsetHistorySize,
+		getHistorySizeStr, conf.SetHistorySize, conf.UnsetHistorySize,
 		promptUserInput,
 	)
 
@@ -102,7 +111,7 @@ func newConfigKeyCmd(
 	use string,
 	short string,
 	long string,
-	getter func() (*string, error),
+	getter func() (string, config.Origin, error),
 	setter func(string) error,
 	unsetter func() error,
 	prompter func() (string, error),
@@ -114,15 +123,15 @@ func newConfigKeyCmd(
 			Short: "Print the current value",
 			Args:  cobra.NoArgs,
 			RunE: func(_ *cobra.Command, _ []string) error {
-				value, err := getter()
+				value, origin, err := getter()
 				if err != nil {
 					return err
 				}
 
-				if value == nil {
-					fmt.Println("No value")
+				if origin == config.OriginNotSet {
+					fmt.Println(origin)
 				} else {
-					fmt.Println(*value)
+					fmt.Printf("%s  [%s]\n", value, origin)
 				}
 
 				return nil

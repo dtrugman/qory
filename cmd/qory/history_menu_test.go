@@ -20,7 +20,7 @@ type MockHistoryProvider struct {
 	mock.Mock
 }
 
-func (m *MockHistoryProvider) HistoryAll() ([]session.SessionPreview, error) {
+func (m *MockHistoryProvider) HistoryAll(_ ...int) ([]session.SessionPreview, error) {
 	args := m.Called()
 	return args.Get(0).([]session.SessionPreview), args.Error(1)
 }
