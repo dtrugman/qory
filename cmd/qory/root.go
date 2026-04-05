@@ -18,11 +18,11 @@ func newRootCmd(q *biz.Qory) *cobra.Command {
 allowing you to specify free-form queries and any local file as context.
 
 Examples:
+  qory # Will open an editor for the query
   qory "Please create a basic OpenAPI yaml template"
   qory "Please add a health check to my OpenAPI spec" openapi.yaml
-  qory --session spec "Please add a health check to my OpenAPI spec" openapi.yaml
-  qory --session spec "Please define a new parameter for the body"
-  qory --last "Please use argparse for the arguments"
+  qory --last "So how would you suggest to fix that?"
+  qory --session 3f2e1d0c-... "Please also add query parameters"
   qory --new "Start fresh regardless of configured mode"`,
 		Args: cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
