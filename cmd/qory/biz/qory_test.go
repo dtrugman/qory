@@ -82,6 +82,11 @@ func (m *MockSessionManager) Last() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
+func (m *MockSessionManager) Delete(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+
 func (m *MockSessionManager) Cleanup(limit int) error {
 	args := m.Called(limit)
 	return args.Error(0)
@@ -557,6 +562,40 @@ func Test_History_SessionLoadsCorrectSession(t *testing.T) {
 	result, err := q.HistorySession("my-session")
 	require.NoError(t, err)
 	assert.Equal(t, existing, result)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+func Test_History_DeleteCallsDelete(t *testing.T) {
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	sm.On("Delete", "my-session").Return(nil)
+
+	q := NewQory(conf, client, sm)
+	err := q.HistoryDelete("my-session")
+	require.NoError(t, err)
+
+	sm.AssertExpectations(t)
+	conf.AssertExpectations(t)
+	client.AssertExpectations(t)
+}
+
+func Test_History_DeleteReturnsError(t *testing.T) {
+	deleteErr := errors.New("not found")
+
+	conf := &MockConfig{}
+	client := &MockClient{}
+	sm := &MockSessionManager{}
+
+	sm.On("Delete", "missing-session").Return(deleteErr)
+
+	q := NewQory(conf, client, sm)
+	err := q.HistoryDelete("missing-session")
+	require.ErrorIs(t, err, deleteErr)
 
 	sm.AssertExpectations(t)
 	conf.AssertExpectations(t)

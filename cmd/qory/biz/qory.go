@@ -41,6 +41,7 @@ type Client interface {
 type SessionManager interface {
 	Load(id string) (session.Session, error)
 	Store(id string, s session.Session) error
+	Delete(id string) error
 	Enum(limit int) ([]session.SessionPreview, error)
 	Last() (string, error)
 	Cleanup(limit int) error
@@ -133,6 +134,11 @@ func (q *Qory) HistoryAll() ([]session.SessionPreview, error) {
 // HistorySession returns the full session for the given session ID.
 func (q *Qory) HistorySession(sessionID string) (session.Session, error) {
 	return q.sm.Load(sessionID)
+}
+
+// HistoryDelete deletes the session with the given ID.
+func (q *Qory) HistoryDelete(sessionID string) error {
+	return q.sm.Delete(sessionID)
 }
 
 // Version returns the application version string.

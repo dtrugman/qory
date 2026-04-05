@@ -13,7 +13,9 @@ import (
 type historyProvider interface {
 	HistoryAll() ([]session.SessionPreview, error)
 	HistorySession(id string) (session.Session, error)
+	HistoryDelete(id string) error
 }
+
 
 const (
 	dateFormat = "Jan 02 2006 15:04"
@@ -51,11 +53,6 @@ var (
 	}
 )
 
-type cachedSession struct {
-	messages []message.Message
-	err      error
-}
-
 type listState struct {
 	cursor        int
 	showPreview   bool
@@ -66,12 +63,9 @@ type sessionModel struct {
 	provider historyProvider
 	previews []session.SessionPreview
 
-	selected string
-	quitting bool
-
-	// map from session ID to loaded content; map is a reference type so
-	// mutations persist across bubbletea's value-copy model updates.
-	cache map[string]cachedSession
+	selected  string
+	quitting  bool
+	statusMsg string
 
 	width  int
 	height int
@@ -84,26 +78,13 @@ func newSessionModel(provider historyProvider) (sessionModel, error) {
 	if err != nil {
 		return sessionModel{}, err
 	}
-	m := sessionModel{
+	return sessionModel{
 		provider: provider,
 		previews: previews,
-		cache:    make(map[string]cachedSession),
 		list:     listState{showPreview: true},
 		width:    80,
 		height:   24,
-	}
-	if len(previews) > 0 {
-		m.cacheSession(previews[0].Name)
-	}
-	return m, nil
-}
-
-func (m sessionModel) cacheSession(id string) {
-	if _, ok := m.cache[id]; ok {
-		return
-	}
-	sess, err := m.provider.HistorySession(id)
-	m.cache[id] = cachedSession{messages: sess.Messages, err: err}
+	}, nil
 }
 
 func (m sessionModel) Init() tea.Cmd {
@@ -121,13 +102,11 @@ func (m sessionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.list.cursor > 0 {
 				m.list.cursor--
 				m.list.previewOffset = 0
-				m.cacheSession(m.previews[m.list.cursor].Name)
 			}
 		case "down", "j":
 			if m.list.cursor < len(m.previews)-1 {
 				m.list.cursor++
 				m.list.previewOffset = 0
-				m.cacheSession(m.previews[m.list.cursor].Name)
 			}
 		case "ctrl+j", "ctrl+down":
 			m.list.previewOffset++
@@ -138,9 +117,22 @@ func (m sessionModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "p":
 			m.list.showPreview = !m.list.showPreview
 			m.list.previewOffset = 0
+		case "d":
+			if len(m.previews) > 0 {
+				id := m.previews[m.list.cursor].Name
+				if err := m.provider.HistoryDelete(id); err != nil {
+					m.statusMsg = fmt.Sprintf("Error: %v", err)
+				} else {
+					m.statusMsg = ""
+					m.previews = append(m.previews[:m.list.cursor], m.previews[m.list.cursor+1:]...)
+					if m.list.cursor >= len(m.previews) && m.list.cursor > 0 {
+						m.list.cursor--
+					}
+					m.list.previewOffset = 0
+				}
+			}
 		case "enter":
 			if len(m.previews) > 0 {
-				m.cacheSession(m.previews[m.list.cursor].Name)
 				m.selected = m.previews[m.list.cursor].Name
 				return m, tea.Quit
 			}
@@ -174,6 +166,10 @@ func (m sessionModel) View() string {
 	}
 
 	sb.WriteString(m.renderSeparator())
+	if m.statusMsg != "" {
+		sb.WriteString(helpStyle.Render(m.statusMsg))
+		sb.WriteByte('\n')
+	}
 	sb.WriteString(helpStyle.Render(m.helpLine()))
 	sb.WriteByte('\n')
 
@@ -240,9 +236,9 @@ func (m sessionModel) renderSeparator() string {
 	return separatorStyle.Render(strings.Repeat("─", width)) + "\n"
 }
 
-func (m sessionModel) buildPreviewLines(cached cachedSession) []string {
+func (m sessionModel) buildPreviewLines(messages []message.Message) []string {
 	var lines []string
-	for _, msg := range cached.messages {
+	for _, msg := range messages {
 		style, ok := roleStyle[msg.Role]
 		if !ok {
 			style = normalStyle
@@ -259,15 +255,12 @@ func (m sessionModel) buildPreviewLines(cached cachedSession) []string {
 
 func (m sessionModel) renderPreview(maxLines int) string {
 	id := m.previews[m.list.cursor].Name
-	cached, ok := m.cache[id]
-	if !ok {
-		return "Loading...\n"
-	}
-	if cached.err != nil {
-		return fmt.Sprintf("Error loading session: %v\n", cached.err)
+	sess, err := m.provider.HistorySession(id)
+	if err != nil {
+		return fmt.Sprintf("Error loading session: %v\n", err)
 	}
 
-	all := m.buildPreviewLines(cached)
+	all := m.buildPreviewLines(sess.Messages)
 	total := len(all)
 
 	// Clamp the offset so we never scroll past the last screenful.
@@ -295,9 +288,9 @@ func (m sessionModel) renderPreview(maxLines int) string {
 
 func (m sessionModel) helpLine() string {
 	if m.list.showPreview {
-		return "↑/k up  ↓/j down  ctrl+↑/↓ scroll preview  p hide preview  enter select  q quit"
+		return "↑/k up  ↓/j down  ctrl+↑/↓ scroll preview  p hide preview  d delete  enter select  q quit"
 	}
-	return "↑/k up  ↓/j down  p show preview  enter select  q quit"
+	return "↑/k up  ↓/j down  p show preview  d delete  enter select  q quit"
 }
 
 // wordWrap inserts newlines so no line exceeds maxWidth runes.
@@ -324,7 +317,7 @@ func wordWrap(text string, maxWidth int) string {
 // ShowHistoryMenu presents an interactive session browser.
 // Returns the selected session ID, or an empty string if the user quits without selecting.
 func ShowHistoryMenu(provider historyProvider) (string, error) {
-	m, err := newSessionModel(provider)
+	m, err := newSessionModel(newCachingProvider(provider))
 	if err != nil {
 		return "", err
 	}

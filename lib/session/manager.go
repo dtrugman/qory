@@ -219,6 +219,20 @@ func (m *Manager) Load(id string) (Session, error) {
 	return session, err
 }
 
+func (m *Manager) Delete(id string) error {
+	if !m.validID(id) {
+		return ErrInvalidID
+	}
+	path := filepath.Join(m.dir, id)
+	if err := os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+			return ErrNotFound
+		}
+		return err
+	}
+	return nil
+}
+
 func (m *Manager) Store(id string, session Session) error {
 	if !m.validID(id) {
 		return ErrInvalidID
