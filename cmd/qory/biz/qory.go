@@ -10,12 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	appName = "Qory"
-)
-
-var version = "dev"
-
 // Config is the interface for reading and writing persistent configuration.
 type Config interface {
 	GetConfigSubdir(name string) (string, error)
@@ -166,11 +160,6 @@ func (q *Qory) HistorySession(sessionID string) (session.Session, error) {
 // HistoryDelete deletes the session with the given ID.
 func (q *Qory) HistoryDelete(sessionID string) error {
 	return q.sm.Delete(sessionID)
-}
-
-// Version returns the application version string.
-func (q *Qory) Version() string {
-	return fmt.Sprintf("%s version %s", appName, version)
 }
 
 // AvailableModels returns the list of models available from the client.

@@ -80,7 +80,7 @@ func main() {
 
 	root := newRootCmd(q)
 	root.AddCommand(
-		newVersionCmd(q),
+		newVersionCmd(),
 		newHistoryCmd(q),
 		newConfigCmd(q),
 	)
